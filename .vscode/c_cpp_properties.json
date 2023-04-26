@@ -32,7 +32,8 @@
                 "${workspaceFolder}/src/mat91lib/sam4s/**",
                 "${workspaceFolder}/src/mat91lib/**",
                 "${workspaceFolder}/src/mmculib/**"
-            ]
+            ],
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4
