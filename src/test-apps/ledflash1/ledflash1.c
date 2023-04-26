@@ -27,6 +27,10 @@
 int
 main (void)
 {
+
+    // needed to use the green LED, setting the bit to high
+    REG_CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
+
     /* Configure STATUS LED PIO as output.  */
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
     pio_config_set (LED_ERROR_PIO, PIO_OUTPUT_LOW); 
