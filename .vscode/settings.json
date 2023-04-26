@@ -5,6 +5,9 @@
         "mat91lib.h": "c",
         "pio.h": "c",
         "pacer.h": "c",
-        "target.h": "c"
+        "target.h": "c",
+        "usb_serial.h": "c",
+        "config.h": "c",
+        "panic.h": "c"
     }
 }

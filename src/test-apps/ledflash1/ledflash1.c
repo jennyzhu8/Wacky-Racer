@@ -28,7 +28,7 @@ int
 main (void)
 {
 
-    // needed to use the green LED, setting the bit to high
+    // needed to use the green LED, as it is using a JTAG Pin, bit must be put high to be used as a PIO
     REG_CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
 
     /* Configure STATUS LED PIO as output.  */

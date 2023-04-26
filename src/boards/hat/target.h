@@ -56,4 +56,7 @@
 /* LED tape  */
 #define LEDTAPE_PIO PA16_PIO
 
+/* Accelerometer*/
+#define ADXL345_ADDRESS 0x53
+
 #endif /* TARGET_H  */

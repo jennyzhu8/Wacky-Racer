@@ -26,7 +26,7 @@ int main (void)
     adc_t adc;
     int count = 0;
 
-    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
+    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
 
     // Redirect stdio to USB serial
     usb_serial_stdio_init ();
