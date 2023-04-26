@@ -27,8 +27,14 @@
 int
 main (void)
 {
+
+    // needed to use the green LED, as it is using a JTAG Pin, bit must be put high to be used as a PIO
+    REG_CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
+
     /* Configure STATUS LED PIO as output.  */
-    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
+    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
+    pio_config_set (LED_ERROR_PIO, PIO_OUTPUT_LOW); 
+    pio_config_set (LED_GREEN_PIO, PIO_OUTPUT_LOW);
 
     pacer_init (LED_FLASH_RATE * 2);
 
@@ -37,7 +43,10 @@ main (void)
         /* Wait until next clock tick.  */
         pacer_wait ();
 
+        // pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
         /* Toggle LED.  */
         pio_output_toggle (LED_STATUS_PIO);
+        pio_output_toggle (LED_ERROR_PIO); 
+        pio_output_toggle (LED_GREEN_PIO);
     }
 }

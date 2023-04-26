@@ -242,6 +242,7 @@ pio_shutdown (pio_t pio)
 static inline __attribute__((optimize (2))) bool
 pio_config_set (pio_t pio, pio_config_t config)
 {
+    
     switch (config)
     {
     case PIO_OUTPUT_HIGH:

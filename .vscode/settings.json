@@ -1,4 +1,13 @@
 {
     "windowsToolchainEnvCmd": "C:\\ence461\\ence461-path.bat",
-    "makeNumJobs": "2"
+    "makeNumJobs": "2",
+    "files.associations": {
+        "mat91lib.h": "c",
+        "pio.h": "c",
+        "pacer.h": "c",
+        "target.h": "c",
+        "usb_serial.h": "c",
+        "config.h": "c",
+        "panic.h": "c"
+    }
 }

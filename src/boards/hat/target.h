@@ -35,18 +35,18 @@
 #define JOYSTICK_Y_ADC_CHANNEL ADC_CHANNEL_5
 
 /* IMU  */
-#define IMU_INT_PIO PA0_PIO
-
+#define IMU_INT_PIO PB6_PIO
 /* LEDs  */
-#define LED_ERROR_PIO PA20_PIO
-#define LED_STATUS_PIO PA23_PIO
+#define LED_ERROR_PIO PA0_PIO  
+#define LED_STATUS_PIO PA1_PIO
+#define LED_GREEN_PIO PB4_PIO
 
 /* General  */
-#define APPENDAGE_PIO PA1_PIO
-#define SERVO_PWM_PIO PA2_PIO
+#define APPENDAGE_PIO PA10_PIO
+#define SERVO_PWM_PIO PA11_PIO
 
 /* Button  */
-#define BUTTON_PIO PA16_PIO
+#define BUTTON_PIO PA15_PIO
 
 /* Radio  */
 #define RADIO_CS_PIO PA10_PIO
@@ -55,5 +55,8 @@
 
 /* LED tape  */
 #define LEDTAPE_PIO PA16_PIO
+
+/* Accelerometer*/
+#define ADXL345_ADDRESS 0x53
 
 #endif /* TARGET_H  */
