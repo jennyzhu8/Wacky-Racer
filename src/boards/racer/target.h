@@ -38,7 +38,8 @@
 #define SERVO_PWM_PIO PA2_PIO
 
 /* Button  */
-#define BUTTON_PIO PA16_PIO
+#define BUTTON_SLEEP_PIO PA3_PIO
+#define BUTTON_SPARE_PIO PA4_PIO
 
 /* H-bridges   */
 #define MOTOR_LEFT_PWM_PIO PA11_PIO
