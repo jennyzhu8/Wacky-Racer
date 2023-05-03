@@ -14,9 +14,9 @@
 /*
  * NOTE: you must define ADXL345_ADDRESS in target.h for this to compile.
  */
-#ifndef ADXL345_ADDRESS
-#error ADXL345_ADDRESS must be defined
-#endif
+//#ifndef ADXL345_ADDRESS
+//#error ADXL345_ADDRESS must be defined
+//#endif
 
 #define PACER_RATE 20
 #define ACCEL_POLL_RATE 1
@@ -29,7 +29,7 @@ static twi_cfg_t adxl345_twi_cfg =
 {
     .channel = TWI_CHANNEL_0,
     .period = TWI_PERIOD_DIVISOR (100000), // 100 kHz
-    .slave_addr = 0
+    .slave_addr = 0x53
 };
 
 
@@ -59,7 +59,7 @@ main (void)
     adxl345 = adxl345_init (adxl345_twi, ADXL345_ADDRESS);
 
     if (! adxl345)
-        panic (LED_ERROR_PIO, 2);
+        panic (LED_STATUS_PIO, 2);
 
     pacer_init (PACER_RATE);
 
