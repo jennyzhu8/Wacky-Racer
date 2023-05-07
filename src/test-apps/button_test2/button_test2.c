@@ -22,7 +22,7 @@ static const led_cfg_t led1_cfg =
 /* Define button configuration.  */
 static const button_cfg_t button1_cfg =
 {
-    .pio = BUTTON_PIO
+    .pio = BUTTON_SPARE_PIO
 };
 
 int main (void)

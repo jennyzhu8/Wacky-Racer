@@ -16,7 +16,7 @@ main (void)
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
 
     /* Configure button PIO as input with pullup.  */
-    pio_config_set (BUTTON_SPARE_PIO, PIO_PULLUP);
+    pio_config_set (BUTTON_SLEEP_PIO, PIO_INPUT);
 
     pacer_init (PACER_RATE);
 
@@ -25,9 +25,9 @@ main (void)
         /* Wait until next clock tick.  */
         pacer_wait ();
 
-        if (pio_input_get (BUTTON_SPARE_PIO))
-            pio_output_high (LED_STATUS_PIO);
-        else
+        if (pio_input_get (BUTTON_SLEEP_PIO))
             pio_output_low (LED_STATUS_PIO);
+        else
+            pio_output_high (LED_STATUS_PIO);
     }
 }
