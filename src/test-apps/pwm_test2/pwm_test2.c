@@ -20,7 +20,7 @@ static const pwm_cfg_t pwm1_cfg =
 {
     .pio = PWM1_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 75),
+    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
     .polarity = PWM_POLARITY_HIGH,
     .stop_state = PIO_OUTPUT_LOW
@@ -30,7 +30,7 @@ static const pwm_cfg_t pwm2_cfg =
 {
     .pio = PWM2_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 75),
+    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
     .polarity = PWM_POLARITY_HIGH,
     .stop_state = PIO_OUTPUT_LOW
@@ -40,7 +40,7 @@ static const pwm_cfg_t pwm3_cfg =
 {
     .pio = PWM3_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 75),
+    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
     .polarity = PWM_POLARITY_HIGH,
     .stop_state = PIO_OUTPUT_LOW
@@ -50,7 +50,7 @@ static const pwm_cfg_t pwm4_cfg =
 {
     .pio = PWM4_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 75),
+    .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
     .polarity = PWM_POLARITY_HIGH,
     .stop_state = PIO_OUTPUT_LOW
@@ -78,7 +78,6 @@ main (void)
     pwm3 = pwm_init (&pwm3_cfg);
     if (! pwm3)
         panic (LED_ERROR_PIO, 3);
-        pwm3 = pwm_init (&pwm3_cfg);
 
     pwm4 = pwm_init (&pwm4_cfg);
     if (! pwm4)

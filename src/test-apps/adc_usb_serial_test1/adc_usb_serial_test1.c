@@ -23,27 +23,37 @@ static const adc_cfg_t adc_cfg =
 
 int main (void)
 {
-    adc_t adc;
+    //adc_t adc;
     int count = 0;
+    int count_run = 0;
+    char *c;
+    usb_serial_t usb1;
 
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
-
+    printf("running %d", count_run++);
     // Redirect stdio to USB serial
     usb_serial_stdio_init ();
 
+/*
     adc = adc_init (&adc_cfg);
     if (! adc)
         panic (LED_ERROR_PIO, 1);
-
+*/
     pacer_init (PACER_RATE);
+
     while (1)
     {
         uint16_t data[1];
 
         pacer_wait ();
-
+        printf("running %d", count_run++);
+        /*
         adc_read (adc, data, sizeof (data));
-        printf ("%3d: %d\n", count++, data[0]);
+        */
+        usb_cdc_read(&usb1,c, sizeof(c) );
+        printf ("%s, count = %d\n", c, count++);
+        
+        //printf ("%3d: %d\n", count++, data[0]);
         pio_output_toggle (LED_STATUS_PIO);
     }
 }

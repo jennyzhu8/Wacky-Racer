@@ -46,12 +46,7 @@ main (void)
         // pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
         /* Toggle LED.  */
         pio_output_toggle (LED_STATUS_PIO);
-<<<<<<< HEAD
-        //pio_output_toggle (LED_ERROR_PIO); 
-        pio_output_toggle (LED_GREEN_PIO);
-=======
         pio_output_toggle (LED_ERROR_PIO); 
         pio_output_toggle (LED_LOW_POWER_PIO);
->>>>>>> f69a6f8a55b86c93db34fc66e180398045a945c5
     }
 }
