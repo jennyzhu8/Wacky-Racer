@@ -15,7 +15,7 @@
 #define LED_FLASH_RATE 2
 
 #ifndef UDP_VBUS_PIO
-#define UDP_VBUS_PIO BUTTON_PIO
+#define UDP_VBUS_PIO USB_VBUS_PIO
 #endif
 
 int
