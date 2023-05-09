@@ -1,5 +1,5 @@
 PERIPHERALS = pwm pit
-DRIVERS = panic
+DRIVERS = panic usb_serial pacer
 
 SRC = pwm_test2.c
 

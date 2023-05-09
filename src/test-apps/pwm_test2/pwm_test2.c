@@ -4,21 +4,24 @@
    Descr:  This example starts two channels simultaneously; one inverted
            with respect to the other.
 */
+#include <stdio.h>
 #include "pwm.h"
 #include "pio.h"
 #include "delay.h"
 #include "panic.h"
+#include "usb_serial.h"
+#include <string.h>
 
-#define PWM1_PIO PA0_PIO
-#define PWM2_PIO PA1_PIO
-#define PWM3_PIO PA2_PIO
-#define PWM4_PIO PB14_PIO
+#define M2B2_PIO PA0_PIO
+#define M1A2_PIO PA1_PIO
+#define M1A1_PIO PA2_PIO
+#define M2B1_PIO PB14_PIO
 
 #define PWM_FREQ_HZ 100e3
 
-static const pwm_cfg_t pwm1_cfg =
+pwm_cfg_t M1A1_cfg =
 {
-    .pio = PWM1_PIO,
+    .pio = M1A1_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
     .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
@@ -26,9 +29,9 @@ static const pwm_cfg_t pwm1_cfg =
     .stop_state = PIO_OUTPUT_LOW
 };
 
-static const pwm_cfg_t pwm2_cfg =
+static const pwm_cfg_t M1A2_cfg =
 {
-    .pio = PWM2_PIO,
+    .pio = M1A2_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
     .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
@@ -36,9 +39,9 @@ static const pwm_cfg_t pwm2_cfg =
     .stop_state = PIO_OUTPUT_LOW
 };
 
-static const pwm_cfg_t pwm3_cfg =
+static const pwm_cfg_t M2B1_cfg =
 {
-    .pio = PWM3_PIO,
+    .pio = M2B1_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
     .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
@@ -46,9 +49,9 @@ static const pwm_cfg_t pwm3_cfg =
     .stop_state = PIO_OUTPUT_LOW
 };
 
-static const pwm_cfg_t pwm4_cfg =
+static const pwm_cfg_t M2B2_cfg =
 {
-    .pio = PWM4_PIO,
+    .pio = M2B2_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
     .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 50),
     .align = PWM_ALIGN_LEFT,
@@ -60,35 +63,66 @@ static const pwm_cfg_t pwm4_cfg =
 int
 main (void)
 {
-    pwm_t pwm1;
-    pwm_t pwm2;
-    pwm_t pwm3;
-    pwm_t pwm4;
+    pwm_t M1A1_PWM;
+    pwm_t M1A2_PWM;
+    pwm_t M2B1_PWM;
+    pwm_t M2B2_PWM;
 
+    // Redirect stdio to USB serial
+    if (usb_serial_stdio_init () < 0)
+        panic(LED_ERROR_PIO, 3);
+    
+    
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
 
-    pwm1 = pwm_init (&pwm1_cfg);
-    if (! pwm1)
+    M1A1_PWM = pwm_init (&M1A1_cfg);
+    if (! M1A1_PWM)
         panic (LED_ERROR_PIO, 1);
 
-    pwm2 = pwm_init (&pwm2_cfg);
-    if (! pwm2)
+    M1A2_PWM = pwm_init (&M1A2_cfg);
+    if (! M1A2_PWM)
         panic (LED_ERROR_PIO, 2);
 
-    pwm3 = pwm_init (&pwm3_cfg);
-    if (! pwm3)
+    M2B1_PWM = pwm_init (&M2B1_cfg);
+    if (! M2B1_PWM)
         panic (LED_ERROR_PIO, 3);
 
-    pwm4 = pwm_init (&pwm4_cfg);
-    if (! pwm4)
+    M2B2_PWM = pwm_init (&M2B2_cfg);
+    if (! M2B2_PWM)
         panic (LED_ERROR_PIO, 4);
 
-    pwm_channels_start (pwm_channel_mask (pwm1) | pwm_channel_mask (pwm2) | pwm_channel_mask (pwm3) | pwm_channel_mask (pwm4));
+    pwm_channels_start (pwm_channel_mask (M1A1_PWM) | pwm_channel_mask (M1A2_PWM) | pwm_channel_mask (M2B1_PWM) | pwm_channel_mask (M2B2_PWM));
 
     while (1)
     {
         delay_ms (500);
         pio_output_toggle (LED_STATUS_PIO);
+
+        char buf[256];
+        if (fgets(buf, sizeof(buf), stdin)) {
+            int duty_set;
+            int direction; // 1 = forward, 0 = backwards
+            
+            // sscanf returns the number of input items successfully matched
+            if (sscanf(buf, "%d %d" ,&duty_set, &direction) == 2) {
+                switch (direction) {
+                case 1:
+                    printf("%d %d\n", duty_set, direction);
+                    pwm_duty_ppt_set(M1A1_PWM, duty_set*10);
+                    pwm_duty_ppt_set(M1A2_PWM, 0);
+                    break;
+                case 0:
+                    printf("%d %d\n", duty_set, direction);
+                    pwm_duty_ppt_set(M1A2_PWM, duty_set*10);
+                    pwm_duty_ppt_set(M1A1_PWM, 0);
+                    break;
+                default:
+                    printf("Invalid operator: %d\n", direction);
+                }
+            } else {
+                printf("Invalid input\n");
+            }
+        }
     }
 
     return 0;

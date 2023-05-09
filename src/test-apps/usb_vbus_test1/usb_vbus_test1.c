@@ -35,7 +35,7 @@ main (void)
 	pacer_wait ();
 
         // Turn on error LED if VBUS not detected
-        pio_output_set (LED_ERROR_PIO, ! pio_input_get (UDP_VBUS_PIO));
+        pio_output_set (LED_ERROR_PIO, pio_input_get (UDP_VBUS_PIO));
 
         // Flash status LED
 	flash_ticks++;

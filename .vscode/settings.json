@@ -8,6 +8,7 @@
         "target.h": "c",
         "usb_serial.h": "c",
         "config.h": "c",
-        "panic.h": "c"
+        "panic.h": "c",
+        "pwm.h": "c"
     }
 }
