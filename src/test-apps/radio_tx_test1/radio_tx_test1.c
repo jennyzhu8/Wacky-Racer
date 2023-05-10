@@ -58,7 +58,7 @@ int main (void)
         pacer_wait ();
         pio_output_toggle (LED_STATUS_PIO);
 
-        snprintf (buffer, sizeof (buffer), "Hello world %d\r\n", count++);
+        snprintf (buffer, sizeof (buffer), "Group 13 Test %d\r\n", count++);
 
         if (! nrf24_write (nrf, buffer, RADIO_PAYLOAD_SIZE))
             pio_output_set (LED_ERROR_PIO, 0);
