@@ -9,6 +9,8 @@
         "usb_serial.h": "c",
         "config.h": "c",
         "panic.h": "c",
-        "pwm.h": "c"
+        "pwm.h": "c",
+        "delay.h": "c",
+        "nrf24.h": "c"
     }
 }

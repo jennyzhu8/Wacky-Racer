@@ -51,7 +51,7 @@
 /* Radio  */
 #define RADIO_CS_PIO PA10_PIO
 #define RADIO_CE_PIO PA9_PIO
-#define RADIO_IRQ_PIO PA15_PIO
+#define RADIO_IRQ_PIO PA11_PIO
 
 /* LED tape  */
 #define LEDTAPE_PIO PA16_PIO
