@@ -17,7 +17,7 @@
 #define M1A1_PIO PA2_PIO
 #define M2B1_PIO PB14_PIO
 
-#define PWM_FREQ_HZ 100e3
+#define PWM_FREQ_HZ 1e3
 
 pwm_cfg_t M1A1_cfg =
 {
@@ -93,6 +93,7 @@ main (void)
 
     pwm_channels_start (pwm_channel_mask (M1A1_PWM) | pwm_channel_mask (M1A2_PWM) | pwm_channel_mask (M2B1_PWM) | pwm_channel_mask (M2B2_PWM));
 
+    printf("Motor input format: Motor1_duty Motor1_direction Motor2_duty Motor2_direction");
     while (1)
     {
         delay_ms (500);
@@ -100,24 +101,41 @@ main (void)
 
         char buf[256];
         if (fgets(buf, sizeof(buf), stdin)) {
-            int duty_set;
-            int direction; // 1 = forward, 0 = backwards
-            
+            int duty_setm1;
+            int directionm1; // 1 = forward, 0 = backwards
+            int duty_setm2;
+            int directionm2;
+
             // sscanf returns the number of input items successfully matched
-            if (sscanf(buf, "%d %d" ,&duty_set, &direction) == 2) {
-                switch (direction) {
+            if (sscanf(buf, "%d %d %d %d" ,&duty_setm1, &directionm1, &duty_setm2, &directionm2) == 4) {
+                switch (directionm1) {
                 case 1:
-                    printf("%d %d\n", duty_set, direction);
-                    pwm_duty_ppt_set(M1A1_PWM, duty_set*10);
+                    printf("%d %d\n", duty_setm1, directionm1);
+                    pwm_duty_ppt_set(M1A1_PWM, duty_setm1*10);
                     pwm_duty_ppt_set(M1A2_PWM, 0);
                     break;
                 case 0:
-                    printf("%d %d\n", duty_set, direction);
-                    pwm_duty_ppt_set(M1A2_PWM, duty_set*10);
+                    printf("%d %d\n", duty_setm1, directionm1);
+                    pwm_duty_ppt_set(M1A2_PWM, duty_setm1*10);
                     pwm_duty_ppt_set(M1A1_PWM, 0);
                     break;
                 default:
-                    printf("Invalid operator: %d\n", direction);
+                    printf("Invalid operator: %d\n", directionm1);
+                }
+
+                switch (directionm2) {
+                case 1:
+                    printf("%d %d\n", duty_setm2, directionm2);
+                    pwm_duty_ppt_set(M2B1_PWM, duty_setm2*10);
+                    pwm_duty_ppt_set(M2B2_PWM, 0);
+                    break;
+                case 0:
+                    printf("%d %d\n", duty_setm2, directionm2);
+                    pwm_duty_ppt_set(M2B2_PWM, duty_setm2*10);
+                    pwm_duty_ppt_set(M2B1_PWM, 0);
+                    break;
+                default:
+                    printf("Invalid operator: %d\n", directionm2);
                 }
             } else {
                 printf("Invalid input\n");

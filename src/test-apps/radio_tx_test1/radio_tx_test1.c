@@ -59,7 +59,11 @@ int main (void)
         pacer_wait ();
         pio_output_toggle (LED_STATUS_PIO);
 
+<<<<<<< HEAD
         snprintf (buffer, sizeof (buffer), "Family is 4eva %d\r\n", count++);
+=======
+        snprintf (buffer, sizeof (buffer), "Group 13 Test %d\r\n", count++);
+>>>>>>> 7a13ab52d07a8d01dd772c27079162b761edbdc2
 
         if (! nrf24_write (nrf, buffer, RADIO_PAYLOAD_SIZE))
             pio_output_set (LED_ERROR_PIO, 0);
