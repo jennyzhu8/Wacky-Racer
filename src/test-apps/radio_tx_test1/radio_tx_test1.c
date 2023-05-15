@@ -10,7 +10,7 @@
 #include "panic.h"
 
 
-#define RADIO_CHANNEL 4
+#define RADIO_CHANNEL 1
 #define RADIO_ADDRESS 0x0123456789LL
 #define RADIO_PAYLOAD_SIZE 32
 
@@ -50,7 +50,7 @@ int main (void)
 
     nrf = nrf24_init (&nrf24_cfg);
     if (! nrf)
-        panic (LED_GREEN_PIO, 2);
+        panic (LED_STATUS_PIO, 2);
 
     while (1)
     {
@@ -59,11 +59,7 @@ int main (void)
         pacer_wait ();
         pio_output_toggle (LED_STATUS_PIO);
 
-<<<<<<< HEAD
-        snprintf (buffer, sizeof (buffer), "Family is 4eva %d\r\n", count++);
-=======
         snprintf (buffer, sizeof (buffer), "Group 13 Test %d\r\n", count++);
->>>>>>> 7a13ab52d07a8d01dd772c27079162b761edbdc2
 
         if (! nrf24_write (nrf, buffer, RADIO_PAYLOAD_SIZE))
             pio_output_set (LED_ERROR_PIO, 0);
