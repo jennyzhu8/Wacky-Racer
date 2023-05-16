@@ -50,7 +50,7 @@ int main (void)
 
     nrf = nrf24_init (&nrf24_cfg);
     if (! nrf)
-        panic (LED_GREEN_PIO, 2);
+        panic (LED_STATUS_PIO, 2);
 
     while (1)
     {

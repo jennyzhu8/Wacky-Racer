@@ -19,7 +19,7 @@
 
 #define PWM_FREQ_HZ 1e3
 
-pwm_cfg_t M1A1_cfg =
+static const pwm_cfg_t M1A1_cfg =
 {
     .pio = M1A1_PIO,
     .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
@@ -68,6 +68,7 @@ main (void)
     pwm_t M2B1_PWM;
     pwm_t M2B2_PWM;
 
+    
     // Redirect stdio to USB serial
     if (usb_serial_stdio_init () < 0)
         panic(LED_ERROR_PIO, 3);
