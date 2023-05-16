@@ -1,5 +1,6 @@
 PERIPHERALS = pit
-DRIVERS =
+DRIVERS = usb_serial adxl345 nrf24 pacer panic
+
 SRC = hat.c
 
 # Use low level of optimisation to simplify debugging
