@@ -13,8 +13,8 @@
 #include "delay.h"
 #include "panic.h"
 
-#define RADIO_CHANNEL 4
-#define RADIO_ADDRESS 0x0123456789LL
+#define RADIO_CHANNEL 2
+#define RADIO_ADDRESS 0x7222222222LL
 #define RADIO_PAYLOAD_SIZE 32
 
 #define PACER_RATE 20
@@ -146,6 +146,7 @@ main (void)
     int ticks = 0;
     int count = 0;
     int16_t accel[3];
+    int16_t motor[3];
 
     // Initialise the TWI (I2C) bus for the ADXL345
     adxl345_twi = twi_init (&adxl345_twi_cfg);
@@ -174,20 +175,91 @@ main (void)
 
         //int16_t acc_data = get_acc_data(count_tx, adxl345);
         send_acc_data(adxl345, accel);
+        int motor_L_dir = 0;
+        int motor_R_dir = 0;
 
 
+        int16_t x_acc = accel[0];
+        int16_t y_acc = accel[1];
+        int16_t z_acc = accel[2];
+        int16_t motor_L = motor[0];
+        int16_t motor_R = motor[1];
+        int z_dir = 0;
 
-        snprintf (buffer, sizeof (buffer), "%5d %5d %5d\n", accel[0], accel[1], accel[2]);
-        //snprintf (buffer, sizeof (buffer), "Group 13 Test\n");
+        if ((x_acc >= -40) && (x_acc <= 60))
+        {
+            if (y_acc > 60) {
+                motor_L = 0;
+                motor_R = abs(y_acc * 100/260);
+                motor_R_dir = 1;
+            }
+            else if (y_acc < -40) {
+                motor_L = abs(y_acc * 100/230);
+                motor_R = 0;
+                motor_L_dir = 1;
+            }
+            else {
+                motor_L = 0;
+                motor_R = 0;
+            }
+        }
+        else if (x_acc > 60)
+        {
+            motor_L_dir = 1;
+            motor_R_dir = 1;
+            if (y_acc > 60) {
+                motor_L = 40;
+                motor_R = abs(y_acc * 100/260);
+            }
+            else if (y_acc < -40) {
+                motor_L = abs(y_acc * 100/230);
+                motor_R = 40;
+            }
+            else {
+                // motor_L = 100; // max speed forward
+                // motor_R = 100;
+                motor_L = abs(x_acc * 100/270);
+                motor_R = abs(x_acc * 100/270);
+
+            }
+        } 
+        else if (x_acc < -40)
+        {
+            // if (y_acc < -40) {
+            //     motor_L = 40;
+            //     motor_R = abs(y_acc * 100/260);
+            // }
+            // else if (y_acc > 60) {
+            //     motor_L = abs(x_acc * 100/280);
+            //     motor_R = 40;
+            // }
+            // motor_L = 100; // max speed backward
+            // motor_R = 100;
+
+            motor_L = abs(x_acc * 100/270);
+            motor_R = abs(x_acc * 100/270);
+            motor_L_dir = 0;
+            motor_R_dir = 0;
+            
+        } 
+
+        if (z_acc > 0) // some dummy code
+        {
+            z_dir = 1;
+        }
+
+        snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
 
         if (!nrf24_write(nrf, buffer, RADIO_PAYLOAD_SIZE))
             {
                 printf("Failed to send data\n");
-                printf("%d, %d, %d\n", accel[0], accel[1], accel[2]);
+                printf("%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
+                printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
             }
         else
             {
                 printf("Sent data: %s\n", buffer);
+                printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
             }
 
         // ticks++;
