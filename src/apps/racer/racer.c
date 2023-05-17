@@ -18,8 +18,8 @@
 
 #define PWM_FREQ_HZ 1e3
 
-#define RADIO_CHANNEL 1
-#define RADIO_ADDRESS 0x0123456789LL
+#define RADIO_CHANNEL 2
+#define RADIO_ADDRESS 0x7222222222LL
 #define RADIO_PAYLOAD_SIZE 32
 
 nrf24_t * initradio (void)
@@ -110,6 +110,15 @@ int main (void)
     pwm_t M2B1_PWM;
     pwm_t M2B2_PWM;
 
+    int duty_setm1;
+    int directionm1; // 1 = forward, 0 = backwards
+    int duty_setm2;
+    int directionm2;
+    int zvalue;
+    int zdirection;
+
+
+
     //initpwm();
     static const pwm_cfg_t M1A1_cfg =
     {
@@ -186,7 +195,42 @@ int main (void)
             pio_output_toggle (LED_STATUS_PIO);
         }
         
-        pwm_duty_ppt_set(M2B1_PWM, 500);
+        if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6){
+            switch (directionm1) {
+                case 1:
+                    printf("%d %d \n", duty_setm1, directionm1);
+                    pwm_duty_ppt_set(M1A1_PWM, duty_setm1*10);
+                    pwm_duty_ppt_set(M1A2_PWM, 0);
+                    break;
+                case 0:
+                    printf("%d %d \n", duty_setm1, directionm1);
+                    pwm_duty_ppt_set(M1A2_PWM, duty_setm1*10);
+                    pwm_duty_ppt_set(M1A1_PWM, 0);
+                    break;
+                default:
+                    printf("Invalid operator: %d\n", directionm1);
+                }
+
+            switch (directionm2) {
+                case 1:
+                    printf("%d %d \n", duty_setm2, directionm2);
+                    pwm_duty_ppt_set(M2B1_PWM, duty_setm2*10);
+                    pwm_duty_ppt_set(M2B2_PWM, 0);
+                    break;
+                case 0:
+                    printf("%d %d\n", duty_setm2, directionm2);
+                    pwm_duty_ppt_set(M2B2_PWM, duty_setm2*10);
+                    pwm_duty_ppt_set(M2B1_PWM, 0);
+                    break;
+                default:
+                    printf("Invalid operator: %d\n", directionm2);
+                }
+        } else {
+            printf("Invalid input\n");
+        }
+        
+        
+    
     }
 }
 
