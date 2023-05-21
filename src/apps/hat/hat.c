@@ -31,70 +31,12 @@ static twi_cfg_t adxl345_twi_cfg =
     .slave_addr = 0x53
 };
 
-void get_accel_data(adxl345_t *adxl345, int16_t accel[3])
-{
-    adxl345_accel_read(adxl345, accel);
-    
-}
-
 void send_acc_data(adxl345_t *adxl345, int16_t* accel) //, nrf24_t *nrf
 {
     char buffer[RADIO_PAYLOAD_SIZE + 1];
-
-    //get_accel_data(adxl345, accel);
     adxl345_accel_read(adxl345, accel);
-    // printf ("x: %5d  y: %5d  z: %5d\n", accel[0], accel[1], accel[2]);
-    // snprintf(buffer, sizeof(buffer), "x: %5hd  y: %5hd  z: %5hd\r\n", accel[0], accel[1], accel[2]);
-    // // snprintf(buffer, sizeof(buffer), "x: %5hd  y: %5hd  z: %5hd\r\n", *accel, *(accel + 1), *(accel + 2));
-
-    // if (!nrf24_write(nrf, buffer, RADIO_PAYLOAD_SIZE))
-    // {
-    //     printf("Failed to send data\n");
-    // }
-    // else
-    // {
-    //     printf("Sent data: %s\n", buffer);
-    // }
 }
 
-// int16_t get_acc_data(uint8_t count_tx, adxl345_t *adxl345)
-// {
-//     // Initialise acceleration data
-//     int16_t* accel[3];
-
-//     // Print accelerometer status to hat serial port
-//     if (! adxl345_is_ready (adxl345)) 
-//         {
-//             count_tx++;
-//             printf ("Waiting for accelerometer to be ready... %d\n", count_tx);
-//             // accel = [0 0 0];
-//         }
-//     else
-//         {
-//             if (adxl345_accel_read (adxl345, accel))
-//             {
-//                 printf ("x: %5d  y: %5d  z: %5d\n", accel[0], accel[1], accel[2]);
-//             }
-//             else
-//             {
-//                 printf ("ERROR: failed to read acceleration\n");
-//             }
-//         }
-
-//     return accel;
-// }
-
-// void send_acc_data(int16_t accel, int count)
-// {
-//     char buffer[RADIO_PAYLOAD_SIZE + 1];
-
-//         snprintf (buffer, sizeof (buffer), "x: %5d  y: %5d  z: %5d\r\n", accel[0], accel[1], accel[2], count++);
-
-//         if (! nrf24_write (nrf, buffer, RADIO_PAYLOAD_SIZE))
-//             pio_output_set (LED_ERROR_PIO, 0);
-//         else
-//             pio_output_set (LED_ERROR_PIO, 1);
-// }
 
 int
 main (void)
@@ -242,11 +184,6 @@ main (void)
             motor_R_dir = 0;
             
         } 
-
-        if (z_acc > 0) // some dummy code
-        {
-            z_dir = 1;
-        }
 
         snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
 

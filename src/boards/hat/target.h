@@ -59,4 +59,8 @@
 /* Accelerometer*/
 #define ADXL345_ADDRESS 0x53
 
+/* Piezo buzzer*/
+
+#define PIEZO_ADDRESS PA17_PIO
+
 #endif /* TARGET_H  */
