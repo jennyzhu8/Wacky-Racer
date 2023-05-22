@@ -10,17 +10,31 @@
 #include "pwm.h"
 #include "usb_serial.h"
 #include <string.h>
+#include "adc.h"
 
 #define M2B2_PIO PA0_PIO
 #define M1A2_PIO PA1_PIO
 #define M1A1_PIO PA2_PIO
 #define M2B1_PIO PB14_PIO
+#define Bumper_PIO PB0_PIO
+#define Extra_PIO PA7_PIO
+#define HSLEEP_PIO PA28_PIO
+#define BATTERY_VOLTAGE PA22_PIO
 
+#define PACER_RATE 2
 #define PWM_FREQ_HZ 1e3
 
 #define RADIO_CHANNEL 2
 #define RADIO_ADDRESS 0x7222222222LL
 #define RADIO_PAYLOAD_SIZE 32
+
+static const adc_cfg_t adc_cfg =
+{
+    .bits = 12,
+    .channels = BIT (ADC_CHANNEL_9),
+    .trigger = ADC_TRIGGER_SW,
+    .clock_speed_kHz = 1000
+};
 
 nrf24_t * initradio (void)
 {
@@ -51,59 +65,59 @@ nrf24_t * initradio (void)
 return nrf24_init (&nrf24_cfg);
 }
 
-/*
-pwm_t initpwm (void)
-{
-    static const pwm_cfg_t M1A1_cfg =
-    {
-        .pio = M1A1_PIO,
-        .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-        .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 0),
-        .align = PWM_ALIGN_LEFT,
-        .polarity = PWM_POLARITY_HIGH,
-        .stop_state = PIO_OUTPUT_LOW
-    };
-
-    static const pwm_cfg_t M1A2_cfg =
-    {
-        .pio = M1A2_PIO,
-        .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-        .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 0),
-        .align = PWM_ALIGN_LEFT,
-        .polarity = PWM_POLARITY_HIGH,
-        .stop_state = PIO_OUTPUT_LOW
-    };
-
-    static const pwm_cfg_t M2B1_cfg =
-    {
-        .pio = M2B1_PIO,
-        .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-        .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 0),
-        .align = PWM_ALIGN_LEFT,
-        .polarity = PWM_POLARITY_HIGH,
-        .stop_state = PIO_OUTPUT_LOW
-    };
-
-    static const pwm_cfg_t M2B2_cfg =
-    {
-        .pio = M2B2_PIO,
-        .period = PWM_PERIOD_DIVISOR (PWM_FREQ_HZ),
-        .duty = PWM_DUTY_DIVISOR (PWM_FREQ_HZ, 0),
-        .align = PWM_ALIGN_LEFT,
-        .polarity = PWM_POLARITY_HIGH,
-        .stop_state = PIO_OUTPUT_LOW
-    };
-}
-*/
-void initled (void)
+void initPIO (void)
 {
     pio_config_set (LED_ERROR_PIO, PIO_OUTPUT_HIGH);
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
     pio_config_set (LED_LOW_POWER_PIO, PIO_OUTPUT_HIGH);
+    pio_config_set (Bumper_PIO, PIO_INPUT);
+    pio_config_set (HSLEEP_PIO, PIO_OUTPUT_HIGH);
+    pio_config_set (BATTERY_VOLTAGE, PIO_OUTPUT_HIGH);
+}
+
+void bumperhit(void)
+{
+    char buffer[RADIO_PAYLOAD_SIZE + 1];
+
+    if (! (pio_input_get(Bumper_PIO)))
+    {
+        printf("Hit \n");
+        snprintf (buffer, sizeof (buffer), "Hit\n");
+        pio_output_low (HSLEEP_PIO);
+        delay_ms (10000);
+        pio_output_high (HSLEEP_PIO);
+        
+    } else {
+        printf("Not Hit \n");
+    }
+
+}
+
+void battery_measure(adc_t *adc)
+{
+    // 4096 = 7.7V
+    // value/4096*7.7 = Voltage
+    uint16_t data[1];
+    static int count_adc=0;
+    adc_read (*adc, data, sizeof (data));
+    printf ("%3d: %d\n", count_adc, data[0]);
+    count_adc ++;
+    if (data[0] < 2660) 
+    {
+        pacer_wait();
+        pio_output_toggle (LED_LOW_POWER_PIO);
+        printf("low \n");
+    } else if (data[0] < 2926) {
+        pio_output_low(LED_LOW_POWER_PIO);
+    } else if (data[0] > 2950) {
+        pio_output_high (LED_LOW_POWER_PIO);
+    }
+
 }
 
 int main (void)
 {
+    adc_t adc;
     nrf24_t *nrf;
     pwm_t M1A1_PWM;
     pwm_t M1A2_PWM;
@@ -117,9 +131,13 @@ int main (void)
     int zvalue;
     int zdirection;
 
+    pacer_init (PACER_RATE);
+
+    adc = adc_init (&adc_cfg);
+    if (! adc)
+        panic (LED_ERROR_PIO, 1);
 
 
-    //initpwm();
     static const pwm_cfg_t M1A1_cfg =
     {
         .pio = M1A1_PIO,
@@ -159,8 +177,9 @@ int main (void)
         .polarity = PWM_POLARITY_HIGH,
         .stop_state = PIO_OUTPUT_LOW
     };
-    initled();
+    initPIO();
     usb_serial_stdio_init ();
+
     M1A1_PWM = pwm_init (&M1A1_cfg);
     if (! M1A1_PWM)
         panic (LED_ERROR_PIO, 1);
@@ -187,6 +206,8 @@ int main (void)
         char buffer[RADIO_PAYLOAD_SIZE + 1];
         uint8_t bytes;
 
+        bumperhit();
+        battery_measure(&adc);
         bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
         if (bytes != 0)
         {
@@ -225,10 +246,10 @@ int main (void)
                 default:
                     printf("Invalid operator: %d\n", directionm2);
                 }
-        } else {
-            printf("Invalid input\n");
+        //} else {
+          //  printf("Invalid input\n");
         }
-        
+       // pio_output_toggle (LED_LOW_POWER_PIO);
         
     
     }
