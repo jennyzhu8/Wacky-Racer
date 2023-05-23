@@ -1,4 +1,4 @@
-PERIPHERALS = spi pwm pit adc
+PERIPHERALS = spi pwm pit adc #ledtape
 DRIVERS = pacer usb_serial nrf24 panic 
 SRC = racer.c
 

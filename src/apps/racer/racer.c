@@ -11,6 +11,7 @@
 #include "usb_serial.h"
 #include <string.h>
 #include "adc.h"
+//#include "ledtape.h"
 
 #define M2B2_PIO PA0_PIO
 #define M1A2_PIO PA1_PIO
@@ -20,11 +21,17 @@
 #define Extra_PIO PA7_PIO
 #define HSLEEP_PIO PA28_PIO
 #define BATTERY_VOLTAGE PA22_PIO
+#define DIP_SW1 PA23_PIO
+#define DIP_SW2 PA20_PIO
 
 #define PACER_RATE 2
 #define PWM_FREQ_HZ 1e3
+#define NUM_LEDS 20
 
-#define RADIO_CHANNEL 2
+#define RADIO_CHANNEL1 1
+#define RADIO_CHANNEL2 2
+#define RADIO_CHANNEL3 3
+#define RADIO_CHANNEL4 4
 #define RADIO_ADDRESS 0x7222222222LL
 #define RADIO_PAYLOAD_SIZE 32
 
@@ -38,6 +45,40 @@ static const adc_cfg_t adc_cfg =
 
 nrf24_t * initradio (void)
 {
+    //printf("in radio int");
+
+    int radio_channel;
+    bool dip1 = pio_input_get(DIP_SW1);
+    bool dip2 = pio_input_get(DIP_SW2);
+    printf("%d %d\n", dip1, dip2);
+
+    
+    switch (dip1){
+        case 0:
+            switch (dip2){
+                case 0:
+                    radio_channel = RADIO_CHANNEL1;
+                    break;
+                case 1:
+                    radio_channel = RADIO_CHANNEL2;
+                    break;
+            }
+            break;
+
+        case 1:
+            switch (dip2){
+                case 0:
+                    radio_channel = RADIO_CHANNEL3;
+                    break;
+                case 1:
+                    radio_channel = RADIO_CHANNEL4;
+                    break;  
+             }
+             break;
+    }
+
+    printf("radio channel: %d\n", radio_channel);
+
     spi_cfg_t spi_cfg =
         {
             .channel = 0,
@@ -49,7 +90,7 @@ nrf24_t * initradio (void)
         };
     nrf24_cfg_t nrf24_cfg =
         {
-            .channel = RADIO_CHANNEL,
+            .channel = radio_channel,
             .address = RADIO_ADDRESS,
             .payload_size = RADIO_PAYLOAD_SIZE,
             .ce_pio = RADIO_CE_PIO,
@@ -73,6 +114,8 @@ void initPIO (void)
     pio_config_set (Bumper_PIO, PIO_INPUT);
     pio_config_set (HSLEEP_PIO, PIO_OUTPUT_HIGH);
     pio_config_set (BATTERY_VOLTAGE, PIO_OUTPUT_HIGH);
+    pio_config_set (DIP_SW1, PIO_INPUT);
+    pio_config_set (DIP_SW2, PIO_INPUT);
 }
 
 void bumperhit(void)
@@ -81,18 +124,41 @@ void bumperhit(void)
 
     if (! (pio_input_get(Bumper_PIO)))
     {
-        printf("Hit \n");
+        //printf("Hit \n");
         snprintf (buffer, sizeof (buffer), "Hit\n");
         pio_output_low (HSLEEP_PIO);
         delay_ms (10000);
         pio_output_high (HSLEEP_PIO);
         
     } else {
-        printf("Not Hit \n");
+        //printf("Not Hit \n");
     }
 
 }
+/*
+void ledtape(void)
+{
+    uint8_t leds[NUM_LEDS * 3];
+    int i;
 
+    for (i = 0; i < NUM_LEDS; i++)
+    {
+        // Set full green  GRB order
+        leds[i * 3] = 0;
+        leds[i * 3 + 1] = 255;
+        leds[i * 3 + 2] = 0;
+    }
+
+    pacer_init(10);
+
+    while (1)
+    {
+        pacer_wait();
+
+        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+    }
+}
+*/
 void battery_measure(adc_t *adc)
 {
     // 4096 = 7.7V
@@ -100,7 +166,7 @@ void battery_measure(adc_t *adc)
     uint16_t data[1];
     static int count_adc=0;
     adc_read (*adc, data, sizeof (data));
-    printf ("%3d: %d\n", count_adc, data[0]);
+    //printf ("%3d: %d\n", count_adc, data[0]);
     count_adc ++;
     if (data[0] < 2660) 
     {
@@ -114,6 +180,8 @@ void battery_measure(adc_t *adc)
     }
 
 }
+
+
 
 int main (void)
 {
@@ -197,7 +265,6 @@ int main (void)
         panic (LED_ERROR_PIO, 4);
 
     pwm_channels_start (pwm_channel_mask (M1A1_PWM) | pwm_channel_mask (M1A2_PWM) | pwm_channel_mask (M2B1_PWM) | pwm_channel_mask (M2B2_PWM));
-
     nrf = initradio();
     if (! nrf)
         panic (LED_ERROR_PIO, 2);
@@ -208,15 +275,17 @@ int main (void)
 
         bumperhit();
         battery_measure(&adc);
+        //ledtape();
         bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
         if (bytes != 0)
         {
             buffer[bytes] = 0;
-            printf ("%s\n", buffer);
+            //printf ("%s\n", buffer);
             pio_output_toggle (LED_STATUS_PIO);
         }
         
-        if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6){
+        if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6)
+        {
             switch (directionm1) {
                 case 1:
                     printf("%d %d \n", duty_setm1, directionm1);
@@ -250,7 +319,7 @@ int main (void)
           //  printf("Invalid input\n");
         }
        // pio_output_toggle (LED_LOW_POWER_PIO);
-        
+        printf("x");
     
     }
 }
