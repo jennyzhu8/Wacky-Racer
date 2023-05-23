@@ -60,3 +60,58 @@ main (void)
         ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
     }
 }
+
+
+
+
+
+void turn_led_on(int led_mode)
+{
+    if (led_mode == 1)
+    {
+        uint8_t leds[NUM_LEDS * 3];
+        int i;
+
+        for (i = 0; i < NUM_LEDS; i++)
+        {
+            // Set full red  GRB order
+            leds[i * 3] = 0;
+            leds[i * 3 + 1] = 255;
+            leds[i * 3 + 2] = 0;
+        }
+
+        pacer_wait();
+        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+    }
+    else if (led_mode == 2)
+    {
+        bool blue = false;
+        int count = 0;
+        ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
+        pacer_wait();
+        
+
+        if (count++ == NUM_LEDS)
+        {
+            // wait for a revolution
+            ledbuffer_clear(leds);
+            if (blue)
+            {
+                ledbuffer_set(leds, 0, 0, 0, 255);
+                ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
+            }
+            else
+            {
+                ledbuffer_set(leds, 0, 255, 0, 0);
+                ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
+            }
+            blue = !blue;
+            count = 0;
+        }
+
+        ledbuffer_write (leds);
+        ledbuffer_advance (leds, 1);
+    }
+
+    
+}
