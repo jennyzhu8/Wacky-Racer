@@ -21,6 +21,9 @@
 #define PWM_FREQ_C 261
 #define PWM_FREQ_D 294
 #define PWM_FREQ_E 330
+#define PWM_FREQ_A  220
+#define PWM_FREW_G  196
+#define PWM_FREW_B 247
 
 #ifndef LED_ACTIVE
 #define LED_ACTIVE PIO_OUTPUT_LOW

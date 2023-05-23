@@ -11,6 +11,7 @@
         "panic.h": "c",
         "pwm.h": "c",
         "delay.h": "c",
-        "nrf24.h": "c"
+        "nrf24.h": "c",
+        "adc.h": "c"
     }
 }
