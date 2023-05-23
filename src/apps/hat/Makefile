@@ -1,5 +1,5 @@
-PERIPHERALS = pit
-DRIVERS = usb_serial adxl345 nrf24 pacer panic
+PERIPHERALS = pwm pit adc
+DRIVERS = usb_serial adxl345 nrf24 pacer panic ledtape
 
 SRC = hat.c
 
