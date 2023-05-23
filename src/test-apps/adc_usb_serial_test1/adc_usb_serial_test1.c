@@ -15,7 +15,7 @@
 static const adc_cfg_t adc_cfg =
 {
     .bits = 12,
-    .channels = BIT (ADC_CHANNEL_0),
+    .channels = BIT (ADC_CHANNEL_3),
     .trigger = ADC_TRIGGER_SW,
     .clock_speed_kHz = 1000
 };
@@ -28,17 +28,17 @@ int main (void)
     int count_run = 0;
     char *c;
     usb_serial_t usb1;
+    adc_t adc;
 
     pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
-    printf("running %d", count_run++);
     // Redirect stdio to USB serial
     usb_serial_stdio_init ();
 
-/*
+
     adc = adc_init (&adc_cfg);
     if (! adc)
         panic (LED_ERROR_PIO, 1);
-*/
+
     pacer_init (PACER_RATE);
 
     while (1)
@@ -46,14 +46,13 @@ int main (void)
         uint16_t data[1];
 
         pacer_wait ();
-        printf("running %d", count_run++);
-        /*
-        adc_read (adc, data, sizeof (data));
-        */
-        usb_cdc_read(&usb1,c, sizeof(c) );
-        printf ("%s, count = %d\n", c, count++);
         
-        //printf ("%3d: %d\n", count++, data[0]);
+        adc_read (adc, data, sizeof (data));
+        
+        //usb_cdc_read(&usb1,c, sizeof(c) );
+        //printf ("%s, count = %d\n", c, count++);
+        
+        printf ("%3d: %d\n", count++, data[0]);
         pio_output_toggle (LED_STATUS_PIO);
     }
 }
