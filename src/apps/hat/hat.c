@@ -9,7 +9,7 @@
 #include "nrf24.h"
 #include "pio.h"
 #include "pacer.h"
-#include "stdio.h"
+#include <stdio.h>
 #include "delay.h"
 #include "panic.h"
 
@@ -49,6 +49,9 @@ main (void)
     pio_config_set (LED_GREEN_PIO, LED_ACTIVE);
     pio_output_set (LED_GREEN_PIO, ! LED_ACTIVE);
 
+    pio_config_set (DIP_SWITCH_1, PIO_INPUT);
+    pio_config_set (BUTTON_SLEEP_PIO, PIO_INPUT);
+    pio_config_set (DIP_SWITCH_2, PIO_INPUT);
 
     // Initialise transmitter
     spi_cfg_t spi_cfg =
@@ -60,6 +63,8 @@ main (void)
             .cs_mode = SPI_CS_MODE_FRAME,
             .bits = 8
         };
+
+
     nrf24_cfg_t nrf24_cfg =
         {
             .channel = RADIO_CHANNEL,
@@ -106,6 +111,13 @@ main (void)
 
     // Redirect stdio to USB serial
     usb_serial_stdio_init ();
+
+    if (pio_input_get(DIP_SWITCH_1)){
+        printf("1\n");
+    }
+    if(pio_input_get(DIP_SWITCH_2)){
+        printf("2\n");
+    }
 
     while (1)
     {

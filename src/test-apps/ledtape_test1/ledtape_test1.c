@@ -46,8 +46,8 @@ main (void)
     for (i = 0; i < NUM_LEDS; i++)
     {
         // Set full green  GRB order
-        leds[i * 3] = 255;
-        leds[i * 3 + 1] = 0;
+        leds[i * 3] = 0;
+        leds[i * 3 + 1] = 255;
         leds[i * 3 + 2] = 0;
     }
 

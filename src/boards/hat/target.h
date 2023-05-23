@@ -46,7 +46,7 @@
 #define SERVO_PWM_PIO PA11_PIO
 
 /* Button  */
-#define BUTTON_PIO PA15_PIO
+#define BUTTON_SLEEP_PIO PA2_PIO
 
 /* Radio  */
 #define RADIO_CS_PIO PA10_PIO
@@ -54,13 +54,19 @@
 #define RADIO_IRQ_PIO PA11_PIO
 
 /* LED tape  */
-#define LEDTAPE_PIO PA16_PIO
+#define LEDTAPE_PIO PA8_PIO
 
 /* Accelerometer*/
 #define ADXL345_ADDRESS 0x53
 
 /* Piezo buzzer*/
-
 #define PIEZO_ADDRESS PA17_PIO
+
+/* Dip switch */
+#define DIP_SWITCH_1 PA23_PIO
+#define DIP_SWITCH_2 PB5_PIO
+
+//Battery checker
+#define V_BATT PA20_PIO
 
 #endif /* TARGET_H  */
