@@ -244,6 +244,8 @@ int main (void)
     int sent = 0;
     int hit = 0;
     int low_power =0;
+    int prev_hit = 0;
+    int bumper_state = 0;
 
     bool is_asleep = false;
     uint8_t ledsred[NUM_LEDS * 3];
@@ -334,9 +336,10 @@ int main (void)
     
     while (1) 
     {
-        
+        bumper_state = ! (pio_input_get(Bumper_PIO));
         check_sleep(&is_asleep);
         low_power = battery_measure(&adc);
+        
         if (low_power || is_asleep)
         {
 
@@ -369,7 +372,7 @@ int main (void)
             pio_output_toggle(LED_STATUS_PIO);
             printf("Not Sent %d\n", sent_counter);
             sent_counter ++;
-            if (sent){
+            if (sent || sent_counter > 1000){
                 printf("sent: %d\n", sent_counter);
                 hit = 0;
                 sent_counter = 0;
@@ -377,19 +380,18 @@ int main (void)
                 delay_ms (10000); // need to sort delay out, 1 not sending before delay
             }
         } else {
-            if (! (pio_input_get(Bumper_PIO)))
+            if (bumper_state && !(prev_hit))
             {
                 hit = 1;
+                printf("Changing hit to 1 \n");
 
             } else {
                 pio_output_low(LED_STATUS_PIO);
                 printf("Not Hit \n");
             }
+            prev_hit = bumper_state;
 
-            
-            //ledtape();
             //Receiving Motor info from hat
-            
             char buffer[RADIO_PAYLOAD_SIZE + 1];
             uint8_t bytes;
             bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
