@@ -34,7 +34,7 @@
 #define RADIO_CHANNEL2 2
 #define RADIO_CHANNEL3 3
 #define RADIO_CHANNEL4 4
-#define RADIO_ADDRESS 0x0123456789LL
+#define RADIO_ADDRESS 0x2777777777LL //0x0123456789LL 0x2777777777LL
 #define RADIO_PAYLOAD_SIZE 32
 
 
@@ -153,31 +153,30 @@ void ledtape(void)
 
     pacer_init(30);
 
-    while (1)
+
+    pacer_wait();
+
+    if (count++ == NUM_LEDS)
     {
-        pacer_wait();
-
-        if (count++ == NUM_LEDS)
+        // wait for a revolution
+        ledbuffer_clear(leds);
+        if (blue)
         {
-            // wait for a revolution
-            ledbuffer_clear(leds);
-            if (blue)
-            {
-                ledbuffer_set(leds, 0, 0, 0, 255);
-                ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
-            }
-            else
-            {
-                ledbuffer_set(leds, 0, 255, 0, 0);
-                ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
-            }
-            blue = !blue;
-            count = 0;
+            ledbuffer_set(leds, 0, 0, 0, 255);
+            ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
         }
-
-        ledbuffer_write (leds);
-        ledbuffer_advance (leds, 1);
+        else
+        {
+            ledbuffer_set(leds, 0, 255, 0, 0);
+            ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
+        }
+        blue = !blue;
+        count = 0;
     }
+
+    ledbuffer_write (leds);
+    ledbuffer_advance (leds, 1);
+    
 }
 
 //void battery_measure(adc_t *adc, bool *is_asleep)
@@ -310,6 +309,7 @@ int main (void)
     printf("Hit \n");
     while (1) 
     {
+        pacer_wait();
         //check_sleep(&is_asleep);
         battery_measure(&adc);
         
@@ -318,7 +318,7 @@ int main (void)
         
         // Sending for bumper hit
         char buffert[RADIO_PAYLOAD_SIZE + 1];
-        
+
         if (! (pio_input_get(Bumper_PIO)))
         {
             printf("Hit \n");
@@ -328,28 +328,31 @@ int main (void)
             pwm_duty_ppt_set(M2B1_PWM, 0);
             pwm_duty_ppt_set(M2B2_PWM, 0);
             hit = true;
+            pio_output_toggle(LED_STATUS_PIO);
         } else {
-            pio_output_low(LED_ERROR_PIO);
+            pio_output_low(LED_STATUS_PIO);
             printf("Not Hit \n");
             snprintf (buffert, sizeof (buffert), "%d \n", 0);
         }
-        /*
+        
         if (! nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE))
             printf("Not Sent\n");
-        else if (hit)
+        else //if (hit)
         {
-            delay_ms (10000); // need to sort delay out, 1 not sending before delay
+            printf("Sent\n");
+            //delay_ms (10000); // need to sort delay out, 1 not sending before delay
         }
         hit = false;
-        */
+        
         // bumper hit send finished
 
     
 
         
         
-        ledtape();
+        //ledtape();
         //Receiving Motor info from hat
+        
         char buffer[RADIO_PAYLOAD_SIZE + 1];
         uint8_t bytes;
         bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
@@ -395,7 +398,7 @@ int main (void)
         //} else {
             //printf("Invalid input\n");
         }
-        // pio_output_toggle (LED_LOW_POWER_PIO);
+
         
         /*
         if (pio_input_get(BUTTON_SLEEP_PIO))
