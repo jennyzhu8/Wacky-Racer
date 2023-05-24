@@ -32,7 +32,7 @@
 #define RADIO_CHANNEL2 2
 #define RADIO_CHANNEL3 3
 #define RADIO_CHANNEL4 4
-#define RADIO_ADDRESS 0x7222222222LL
+#define RADIO_ADDRESS 0x0123456789LL
 #define RADIO_PAYLOAD_SIZE 32
 
 static const adc_cfg_t adc_cfg =
@@ -51,7 +51,6 @@ nrf24_t * initradio (void)
     bool dip1 = pio_input_get(DIP_SW1);
     bool dip2 = pio_input_get(DIP_SW2);
     printf("%d %d\n", dip1, dip2);
-
     
     switch (dip1){
         case 0:
@@ -76,7 +75,7 @@ nrf24_t * initradio (void)
              }
              break;
     }
-
+    radio_channel = RADIO_CHANNEL4;
     printf("radio channel: %d\n", radio_channel);
 
     spi_cfg_t spi_cfg =
@@ -109,32 +108,37 @@ return nrf24_init (&nrf24_cfg);
 void initPIO (void)
 {
     pio_config_set (LED_ERROR_PIO, PIO_OUTPUT_HIGH);
-    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_HIGH);
+    pio_config_set (LED_STATUS_PIO, PIO_OUTPUT_LOW);
     pio_config_set (LED_LOW_POWER_PIO, PIO_OUTPUT_HIGH);
     pio_config_set (Bumper_PIO, PIO_INPUT);
     pio_config_set (HSLEEP_PIO, PIO_OUTPUT_HIGH);
     pio_config_set (BATTERY_VOLTAGE, PIO_OUTPUT_HIGH);
+    pio_config_set (BUTTON_SLEEP_PIO, PIO_INPUT);
     pio_config_set (DIP_SW1, PIO_INPUT);
     pio_config_set (DIP_SW2, PIO_INPUT);
 }
 
-void bumperhit(void)
+
+
+/*
+void check_sleep(bool *is_asleep)
 {
-    char buffer[RADIO_PAYLOAD_SIZE + 1];
+    static bool prev_sleep_button_high = false;
+    bool sleep_button_high = pio_input_get(BUTTON_SLEEP_PIO);
 
-    if (! (pio_input_get(Bumper_PIO)))
-    {
-        //printf("Hit \n");
-        snprintf (buffer, sizeof (buffer), "Hit\n");
-        pio_output_low (HSLEEP_PIO);
-        delay_ms (10000);
-        pio_output_high (HSLEEP_PIO);
-        
-    } else {
-        //printf("Not Hit \n");
+    if (!prev_sleep_button_high && sleep_button_high){ //button rising edge get
+        if (!*is_asleep) //enter sleep mode
+        {
+            *is_asleep = true;
+            //turn LEDs off
+        } else if (*is_asleep) //exit sleep mode
+        {
+            *is_asleep = false;
+        }
     }
-
+    prev_sleep_button_high = sleep_button_high;
 }
+*/
 /*
 void ledtape(void)
 {
@@ -159,6 +163,7 @@ void ledtape(void)
     }
 }
 */
+//void battery_measure(adc_t *adc, bool *is_asleep)
 void battery_measure(adc_t *adc)
 {
     // 4096 = 7.7V
@@ -172,6 +177,7 @@ void battery_measure(adc_t *adc)
     {
         pacer_wait();
         pio_output_toggle (LED_LOW_POWER_PIO);
+        //*is_asleep = true;
         printf("low \n");
     } else if (data[0] < 2926) {
         pio_output_low(LED_LOW_POWER_PIO);
@@ -180,8 +186,21 @@ void battery_measure(adc_t *adc)
     }
 
 }
-
-
+/*
+void sleep_func(bool *is_asleep)
+{
+    printf("asleep %d\n", *is_asleep);
+    if(*is_asleep)
+    {
+        pio_output_low (HSLEEP_PIO);
+        pio_output_low (LED_STATUS_PIO);
+    } else if (!*is_asleep)
+    {
+        pio_output_high (HSLEEP_PIO);
+        pio_output_high (LED_STATUS_PIO);
+    }
+}
+*/
 
 int main (void)
 {
@@ -198,6 +217,9 @@ int main (void)
     int directionm2;
     int zvalue;
     int zdirection;
+
+    bool is_asleep = false;
+    bool hit = false;
 
     pacer_init (PACER_RATE);
 
@@ -270,30 +292,67 @@ int main (void)
         panic (LED_ERROR_PIO, 2);
     while (1) 
     {
+        //check_sleep(&is_asleep);
+        battery_measure(&adc);
+        //battery_measure(&adc, &is_asleep);
+        //sleep_func(&is_asleep);
+        
+        
+
+        // Sending for bumper hit
+        char buffert[RADIO_PAYLOAD_SIZE + 1];
+
+        if (! (pio_input_get(Bumper_PIO)))
+        {
+        //printf("Hit \n");
+        snprintf (buffert, sizeof (buffert), "%d \n", 1);
+        pwm_duty_ppt_set(M1A1_PWM, 0);
+        pwm_duty_ppt_set(M1A2_PWM, 0);
+        pwm_duty_ppt_set(M2B1_PWM, 0);
+        pwm_duty_ppt_set(M2B2_PWM, 0);
+        hit = true;
+        } else {
+        //printf("Not Hit \n");
+        snprintf (buffert, sizeof (buffert), "%d \n", 0);
+        }
+        /*
+        if (! nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE))
+            printf("Not Sent\n");
+        else if (hit)
+        {
+            delay_ms (10000); // need to sort delay out, 1 not sending before delay
+        }
+        hit = false;
+        */
+        // bumper hit send finished
+
+    
+
+        
+        //ledtape();
+
+        //Receiving Motor info from hat
         char buffer[RADIO_PAYLOAD_SIZE + 1];
         uint8_t bytes;
-
-        bumperhit();
-        battery_measure(&adc);
-        //ledtape();
         bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
         if (bytes != 0)
         {
             buffer[bytes] = 0;
-            //printf ("%s\n", buffer);
-            pio_output_toggle (LED_STATUS_PIO);
+            //printf ("buffer %s\n", buffer);
+            
+        } else{
+            printf("not recieved\n");
         }
-        
         if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6)
         {
             switch (directionm1) {
                 case 1:
-                    printf("%d %d \n", duty_setm1, directionm1);
+                    printf(" duty%d %d \n", duty_setm1, directionm1);
                     pwm_duty_ppt_set(M1A1_PWM, duty_setm1*10);
                     pwm_duty_ppt_set(M1A2_PWM, 0);
                     break;
                 case 0:
-                    printf("%d %d \n", duty_setm1, directionm1);
+                    printf("duty%d %d \n", duty_setm1, directionm1);
                     pwm_duty_ppt_set(M1A2_PWM, duty_setm1*10);
                     pwm_duty_ppt_set(M1A1_PWM, 0);
                     break;
@@ -303,12 +362,12 @@ int main (void)
 
             switch (directionm2) {
                 case 1:
-                    printf("%d %d \n", duty_setm2, directionm2);
+                    printf("duty2 %d %d \n", duty_setm2, directionm2);
                     pwm_duty_ppt_set(M2B1_PWM, duty_setm2*10);
                     pwm_duty_ppt_set(M2B2_PWM, 0);
                     break;
                 case 0:
-                    printf("%d %d\n", duty_setm2, directionm2);
+                    printf("duty2 %d %d \n", duty_setm2, directionm2);
                     pwm_duty_ppt_set(M2B2_PWM, duty_setm2*10);
                     pwm_duty_ppt_set(M2B1_PWM, 0);
                     break;
@@ -316,11 +375,21 @@ int main (void)
                     printf("Invalid operator: %d\n", directionm2);
                 }
         //} else {
-          //  printf("Invalid input\n");
+            //printf("Invalid input\n");
         }
-       // pio_output_toggle (LED_LOW_POWER_PIO);
-        printf("x");
-    
+        // pio_output_toggle (LED_LOW_POWER_PIO);
+        
+        /*
+        if (pio_input_get(BUTTON_SLEEP_PIO))
+        {
+            //printf("Hit \n");
+            pio_output_low(LED_ERROR_PIO);
+            
+        } else {
+            //printf("Not Hit \n");
+            pio_output_high(LED_ERROR_PIO);
+        }
+        */
     }
 }
 

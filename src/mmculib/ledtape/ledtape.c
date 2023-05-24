@@ -3,7 +3,7 @@
 
 // TPERIOD is manually tuned to generate the correct 800 kHz waveforms
 // The sum of the delays + the time it takes to set the PIO pin is about 1.25 uS
-#define TPERIOD     (0.2)
+#define TPERIOD     (0.4)
 
 __attribute__((optimize (2)))
 __always_inline__

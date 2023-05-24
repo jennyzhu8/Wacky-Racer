@@ -8,6 +8,7 @@
 #include "target.h"
 #include "pacer.h"
 #include "ledtape.h"
+#include "ledbuffer.h"
 
 #define NUM_LEDS 21
 
@@ -60,9 +61,6 @@ main (void)
         ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
     }
 }
-
-
-
 
 
 void turn_led_on(int led_mode)
