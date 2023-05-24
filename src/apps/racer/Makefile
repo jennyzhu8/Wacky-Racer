@@ -1,5 +1,5 @@
-PERIPHERALS = spi pwm pit adc #ledtape
-DRIVERS = pacer usb_serial nrf24 panic 
+PERIPHERALS = spi pwm pit adc 
+DRIVERS = pacer usb_serial nrf24 panic ledtape
 SRC = racer.c
 
 # Use low level of optimisation to simplify debugging

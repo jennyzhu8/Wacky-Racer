@@ -3,6 +3,8 @@
 #include "nrf24.h"
 #include "pio.h"
 #include "pacer.h"
+#include "ledbuffer.h"
+#include "ledtape.h"
 #include "stdio.h"
 #include "delay.h"
 #include "panic.h"
@@ -11,7 +13,7 @@
 #include "usb_serial.h"
 #include <string.h>
 #include "adc.h"
-//#include "ledtape.h"
+
 
 #define M2B2_PIO PA0_PIO
 #define M1A2_PIO PA1_PIO
@@ -26,7 +28,7 @@
 
 #define PACER_RATE 2
 #define PWM_FREQ_HZ 1e3
-#define NUM_LEDS 20
+#define NUM_LEDS 21
 
 #define RADIO_CHANNEL1 1
 #define RADIO_CHANNEL2 2
@@ -34,6 +36,8 @@
 #define RADIO_CHANNEL4 4
 #define RADIO_ADDRESS 0x0123456789LL
 #define RADIO_PAYLOAD_SIZE 32
+
+
 
 static const adc_cfg_t adc_cfg =
 {
@@ -139,30 +143,43 @@ void check_sleep(bool *is_asleep)
     prev_sleep_button_high = sleep_button_high;
 }
 */
-/*
+
 void ledtape(void)
 {
-    uint8_t leds[NUM_LEDS * 3];
-    int i;
+    bool blue = false;
+    int count = 0;
 
-    for (i = 0; i < NUM_LEDS; i++)
-    {
-        // Set full green  GRB order
-        leds[i * 3] = 0;
-        leds[i * 3 + 1] = 255;
-        leds[i * 3 + 2] = 0;
-    }
+    ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
 
-    pacer_init(10);
+    pacer_init(30);
 
     while (1)
     {
         pacer_wait();
 
-        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+        if (count++ == NUM_LEDS)
+        {
+            // wait for a revolution
+            ledbuffer_clear(leds);
+            if (blue)
+            {
+                ledbuffer_set(leds, 0, 0, 0, 255);
+                ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
+            }
+            else
+            {
+                ledbuffer_set(leds, 0, 255, 0, 0);
+                ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
+            }
+            blue = !blue;
+            count = 0;
+        }
+
+        ledbuffer_write (leds);
+        ledbuffer_advance (leds, 1);
     }
 }
-*/
+
 //void battery_measure(adc_t *adc, bool *is_asleep)
 void battery_measure(adc_t *adc)
 {
@@ -290,30 +307,31 @@ int main (void)
     nrf = initradio();
     if (! nrf)
         panic (LED_ERROR_PIO, 2);
+    printf("Hit \n");
     while (1) 
     {
         //check_sleep(&is_asleep);
         battery_measure(&adc);
+        
         //battery_measure(&adc, &is_asleep);
         //sleep_func(&is_asleep);
         
-        
-
         // Sending for bumper hit
         char buffert[RADIO_PAYLOAD_SIZE + 1];
-
+        
         if (! (pio_input_get(Bumper_PIO)))
         {
-        //printf("Hit \n");
-        snprintf (buffert, sizeof (buffert), "%d \n", 1);
-        pwm_duty_ppt_set(M1A1_PWM, 0);
-        pwm_duty_ppt_set(M1A2_PWM, 0);
-        pwm_duty_ppt_set(M2B1_PWM, 0);
-        pwm_duty_ppt_set(M2B2_PWM, 0);
-        hit = true;
+            printf("Hit \n");
+            snprintf (buffert, sizeof (buffert), "%d \n", 1);
+            pwm_duty_ppt_set(M1A1_PWM, 0);
+            pwm_duty_ppt_set(M1A2_PWM, 0);
+            pwm_duty_ppt_set(M2B1_PWM, 0);
+            pwm_duty_ppt_set(M2B2_PWM, 0);
+            hit = true;
         } else {
-        //printf("Not Hit \n");
-        snprintf (buffert, sizeof (buffert), "%d \n", 0);
+            pio_output_low(LED_ERROR_PIO);
+            printf("Not Hit \n");
+            snprintf (buffert, sizeof (buffert), "%d \n", 0);
         }
         /*
         if (! nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE))
@@ -329,8 +347,8 @@ int main (void)
     
 
         
-        //ledtape();
-
+        
+        ledtape();
         //Receiving Motor info from hat
         char buffer[RADIO_PAYLOAD_SIZE + 1];
         uint8_t bytes;
