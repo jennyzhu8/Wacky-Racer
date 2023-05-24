@@ -211,8 +211,19 @@ void battery_measure(adc_t *adc)
     uint16_t data[1];
     static int count_adc=0;
     adc_read (*adc, data, sizeof (data));
-    //printf ("%3d: %d\n", count_adc, data[0]);
+    printf ("%3d: %d\n", count_adc, data[0]);
     count_adc ++;
+    uint8_t leds[NUM_LEDS * 3];
+    int i;
+
+    for (i = 0; i < NUM_LEDS; i++)
+    {
+        // Set full green  GRB order
+        leds[i * 3] = 0;
+        leds[i * 3 + 1] = 255;
+        leds[i * 3 + 2] = 0;
+    }
+
     if (data[0] < 2660) 
     {
         pio_output_set (LED_STATUS_PIO, !LED_ACTIVE);
@@ -220,9 +231,11 @@ void battery_measure(adc_t *adc)
     } else {
         //printf("good\n");
         pio_output_set(LED_STATUS_PIO, LED_ACTIVE);
+        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
         //pio_output_set (LED_STATUS_PIO, !LED_ACTIVE);
     }
 }
+
 
 
 int
@@ -253,8 +266,9 @@ main (void)
 
 
     adc = adc_init(&adc_cfg);
+
     if (! adc){
-        panic (LED_ERROR_PIO, 2);
+        panic (LED_GREEN_PIO, 2);
     }
     PIEZO_PWMA = pwm_init (&PIEZO_cfgA);
     if (! PIEZO_PWMA)
@@ -309,16 +323,16 @@ main (void)
         panic (LED_STATUS_PIO, 2);
 
 
-    uint8_t leds[NUM_LEDS * 3];
-    int i;
+    // uint8_t leds[NUM_LEDS * 3];
+    // int i;
 
-    for (i = 0; i < NUM_LEDS; i++)
-    {
-        // Set full green  GRB order
-        leds[i * 3] = 0;
-        leds[i * 3 + 1] = 255;
-        leds[i * 3 + 2] = 0;
-    }
+    // for (i = 0; i < NUM_LEDS; i++)
+    // {
+    //     // Set full green  GRB order
+    //     leds[i * 3] = 0;
+    //     leds[i * 3 + 1] = 255;
+    //     leds[i * 3 + 2] = 0;
+    // }
 
 
     pacer_init (PACER_RATE);
@@ -332,7 +346,7 @@ main (void)
         char bufferi[RADIO_PAYLOAD_SIZE + 1];
 
         
-        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+        //ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
         
 
         battery_measure(&adc);
