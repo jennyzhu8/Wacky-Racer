@@ -61,6 +61,7 @@ nrf24_t * initradio (void)
             switch (dip2){
                 case 0:
                     radio_channel = RADIO_CHANNEL1;
+
                     break;
                 case 1:
                     radio_channel = RADIO_CHANNEL2;
@@ -79,7 +80,6 @@ nrf24_t * initradio (void)
              }
              break;
     }
-    radio_channel = RADIO_CHANNEL4;
     printf("radio channel: %d\n", radio_channel);
 
     spi_cfg_t spi_cfg =
@@ -124,7 +124,7 @@ void initPIO (void)
 
 
 
-/*
+
 void check_sleep(bool *is_asleep)
 {
     static bool prev_sleep_button_high = false;
@@ -142,7 +142,7 @@ void check_sleep(bool *is_asleep)
     }
     prev_sleep_button_high = sleep_button_high;
 }
-*/
+
 
 void ledtape(void)
 {
@@ -180,12 +180,14 @@ void ledtape(void)
 }
 
 //void battery_measure(adc_t *adc, bool *is_asleep)
-void battery_measure(adc_t *adc)
+int battery_measure(adc_t *adc)
 {
     // 4096 = 7.7V
     // value/4096*7.7 = Voltage
     uint16_t data[1];
     static int count_adc=0;
+    int low_power = 0;
+
     adc_read (*adc, data, sizeof (data));
     //printf ("%3d: %d\n", count_adc, data[0]);
     count_adc ++;
@@ -195,11 +197,15 @@ void battery_measure(adc_t *adc)
         pio_output_toggle (LED_LOW_POWER_PIO);
         //*is_asleep = true;
         printf("low \n");
+        low_power = 1;
     } else if (data[0] < 2926) {
         pio_output_low(LED_LOW_POWER_PIO);
+        printf("getting low \n");
     } else if (data[0] > 2950) {
         pio_output_high (LED_LOW_POWER_PIO);
+        low_power =0;
     }
+    return low_power;
 
 }
 
@@ -237,17 +243,23 @@ int main (void)
     int sent_counter = 0;
     int sent = 0;
     int hit = 0;
+    int low_power =0;
 
     bool is_asleep = false;
-    uint8_t leds[NUM_LEDS * 3];
+    uint8_t ledsred[NUM_LEDS * 3];
+    uint8_t ledsoff[NUM_LEDS * 3];
     int i;
 
     for (i = 0; i < NUM_LEDS; i++)
     {
         // Set full green  GRB order
-        leds[i * 3] = 0;
-        leds[i * 3 + 1] = 255;
-        leds[i * 3 + 2] = 0;
+        ledsred[i * 3] = 0;
+        ledsred[i * 3 + 1] = 255;
+        ledsred[i * 3 + 2] = 0;
+        ledsoff[i * 3] = 0;
+        ledsoff[i * 3 + 1] = 0;
+        ledsoff[i * 3 + 2] = 0;
+        
     }
 
     pacer_init (PACER_RATE);
@@ -319,14 +331,25 @@ int main (void)
     nrf = initradio();
     if (! nrf)
         panic (LED_ERROR_PIO, 2);
-    printf("Hit \n");
+    
     while (1) 
     {
-        //pacer_wait();
-        //check_sleep(&is_asleep);
-        battery_measure(&adc);
         
-        //battery_measure(&adc, &is_asleep);
+        check_sleep(&is_asleep);
+        low_power = battery_measure(&adc);
+        if (low_power || is_asleep)
+        {
+
+            pwm_duty_ppt_set(M1A1_PWM, 0);
+            pwm_duty_ppt_set(M1A2_PWM, 0);
+            pwm_duty_ppt_set(M2B1_PWM, 0);
+            pwm_duty_ppt_set(M2B2_PWM, 0);
+            ledtape_write (LEDTAPE_PIO, ledsoff, NUM_LEDS * 3);
+        } else 
+        {
+            ledtape_write (LEDTAPE_PIO, ledsred, NUM_LEDS * 3);
+        }
+        
         //sleep_func(&is_asleep);
         
         // Sending for bumper hit
@@ -363,7 +386,7 @@ int main (void)
                 printf("Not Hit \n");
             }
 
-            ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+            
             //ledtape();
             //Receiving Motor info from hat
             
@@ -378,7 +401,7 @@ int main (void)
             } else{
                 printf("not recieved\n");
             }
-            if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6)
+            if ((sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6) && !(low_power || is_asleep))
             {
                 switch (directionm1) {
                     case 1:
