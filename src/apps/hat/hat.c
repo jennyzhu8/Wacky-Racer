@@ -19,7 +19,7 @@
 #include "adc.h"
 
 #define RADIO_CHANNEL 4
-#define RADIO_ADDRESS 0x0123456789LL
+#define RADIO_ADDRESS 0x2777777777LL
 #define channel1 1
 #define channel2 2
 #define channel3 3
@@ -31,15 +31,12 @@
 
 #define NUM_LEDS 21
 
-#define PACER_RATE 20
-#define PWM_FREQ_A 440
 #define PWM_FREQ_F 349
 #define PWM_FREQ_G 391
 #define PWM_FREQ_C 261
 #define PWM_FREQ_D 294
 #define PWM_FREQ_E 330
 #define PWM_FREQ_A  220
-#define PWM_FREW_G  196
 #define PWM_FREW_B 247
 
 #ifndef LED_ACTIVE
@@ -123,9 +120,12 @@ static twi_cfg_t adxl345_twi_cfg =
 
 void pio_config(void)
 {
-    pio_config_set (LED_ERROR_PIO,  LED_ACTIVE);
-    pio_config_set (LED_STATUS_PIO,  LED_ACTIVE);
-    pio_config_set (LED_GREEN_PIO,  LED_ACTIVE);
+
+    REG_CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
+
+    pio_config_set (LED_ERROR_PIO, !LED_ACTIVE);
+    pio_config_set (LED_STATUS_PIO, !LED_ACTIVE);
+    pio_config_set (LED_GREEN_PIO, !LED_ACTIVE);
 
     pio_config_set (DIP_SWITCH_1, PIO_INPUT);
     pio_config_set (BUTTON_SLEEP_PIO, PIO_INPUT);
@@ -199,15 +199,13 @@ void battery_measure(adc_t *adc)
     count_adc ++;
     if (data[0] < 2660) 
     {
-        pacer_wait();
-        pio_output_toggle (LED_GREEN_PIO);
-        printf("low \n");
-    } else if (data[0] < 2926) {
-        pio_output_low(LED_GREEN_PIO);
-    } else if (data[0] > 2950) {
-        pio_output_high (LED_GREEN_PIO);
+        pio_output_set (LED_STATUS_PIO, LED_ACTIVE);
+        //printf("low \n");
+    } else {
+        //printf("good\n");
+        pio_output_set(LED_STATUS_PIO, !LED_ACTIVE);
+        //pio_output_set (LED_STATUS_PIO, !LED_ACTIVE);
     }
-
 }
 
 
@@ -311,6 +309,7 @@ main (void)
         /* Wait until next clock tick.  */
         pacer_wait ();
 
+
         ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
 
         battery_measure(&adc);
@@ -391,27 +390,27 @@ main (void)
         } 
 
         //sending accel data to the car
-        snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
+        //snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
 
 
         //printing accel data
         if (!nrf24_write(nrf, buffer, RADIO_PAYLOAD_SIZE))
             {
-                //printf("Failed to send data\n");
-                //printf("%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
-                //printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
+                // printf("Failed to send data\n");
+                // printf("%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
+                // printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
             }
         else
             {
-                //printf("Sent data: %s\n", buffer);
-                //printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
+                // printf("Sent data: %s\n", buffer);
+                // printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
             }   
 
         bytes = nrf24_read (nrf, bufferi, RADIO_PAYLOAD_SIZE);
         if (bytes != 0)
         {
             bufferi[bytes] = 0;
-            printf ("%s\n", buffer);
+            //printf ("%s\n", buffer);
             pio_output_toggle (LED_STATUS_PIO);
         }     
 
@@ -420,29 +419,36 @@ main (void)
             if (buzz == 1){
                 printf("Car is hit!\n");
                 pwm_duty_ppt_set(PIEZO_PWMA, PWM_FREQ_A);
+                printf("a\n");
                 delay_ms(1000);
+                printf("b\n");
                 pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
+                printf("c\n");
                 delay_ms(1000);
-                pwm_duty_ppt_set(PIEZO_PWMG, PWM_FREQ_G);
-                delay_ms(1000);
-                pwm_duty_ppt_set(PIEZO_PWMC, PWM_FREQ_C);
-                delay_ms(2000);
-                pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
-                delay_ms(1000);
-                pwm_duty_ppt_set(PIEZO_PWMG, PWM_FREQ_G);
-                delay_ms(1000);
-                pwm_duty_ppt_set(PIEZO_PWMA, PWM_FREQ_A);
-                delay_ms(1000);
-                pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
-                delay_ms(2000);
+                printf("d\n");
+                pwm_duty_ppt_set(PIEZO_PWMF, 0);
+                // pwm_duty_ppt_set(PIEZO_PWMG, PWM_FREQ_G);
+                // delay_ms(1000);
+                // pwm_duty_ppt_set(PIEZO_PWMC, PWM_FREQ_C);
+                // delay_ms(2000);
+                // pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
+                // delay_ms(1000);
+                // pwm_duty_ppt_set(PIEZO_PWMG, PWM_FREQ_G);
+                // delay_ms(1000);
+                // pwm_duty_ppt_set(PIEZO_PWMA, PWM_FREQ_A);
+                // delay_ms(1000);
+                // pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
+                // delay_ms(2000);
             } else {
+
                 printf("keep driving\n");
             }
         } else {
-            printf("no input\n");
+            //printf("no input\n");
             //pio_output_toggle(LED_STATUS_PIO);
 
         }
+
 
     }
 }
