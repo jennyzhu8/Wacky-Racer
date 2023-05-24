@@ -401,7 +401,7 @@ int main (void)
             } else{
                 printf("not recieved\n");
             }
-            if ((sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6) && !(low_power || is_asleep))
+            if ((sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6) && ! (low_power || is_asleep))
             {
                 switch (directionm1) {
                     case 1:
