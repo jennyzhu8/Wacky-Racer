@@ -28,7 +28,7 @@
 
 #define PACER_RATE 2
 #define PWM_FREQ_HZ 1e3
-#define NUM_LEDS 21
+#define NUM_LEDS 20
 
 #define RADIO_CHANNEL1 1
 #define RADIO_CHANNEL2 2
@@ -151,7 +151,7 @@ void ledtape(void)
 
     ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
 
-    pacer_init(30);
+    pacer_init(10);
 
 
     pacer_wait();
@@ -202,6 +202,7 @@ void battery_measure(adc_t *adc)
     }
 
 }
+
 /*
 void sleep_func(bool *is_asleep)
 {
@@ -233,9 +234,21 @@ int main (void)
     int directionm2;
     int zvalue;
     int zdirection;
+    int sent_counter = 0;
+    int sent = 0;
+    int hit = 0;
 
     bool is_asleep = false;
-    bool hit = false;
+    uint8_t leds[NUM_LEDS * 3];
+    int i;
+
+    for (i = 0; i < NUM_LEDS; i++)
+    {
+        // Set full green  GRB order
+        leds[i * 3] = 0;
+        leds[i * 3 + 1] = 255;
+        leds[i * 3 + 2] = 0;
+    }
 
     pacer_init (PACER_RATE);
 
@@ -309,7 +322,7 @@ int main (void)
     printf("Hit \n");
     while (1) 
     {
-        pacer_wait();
+        //pacer_wait();
         //check_sleep(&is_asleep);
         battery_measure(&adc);
         
@@ -318,99 +331,101 @@ int main (void)
         
         // Sending for bumper hit
         char buffert[RADIO_PAYLOAD_SIZE + 1];
-
-        if (! (pio_input_get(Bumper_PIO)))
+        if (hit)
         {
             printf("Hit \n");
-            snprintf (buffert, sizeof (buffert), "%d \n", 1);
             pwm_duty_ppt_set(M1A1_PWM, 0);
             pwm_duty_ppt_set(M1A2_PWM, 0);
             pwm_duty_ppt_set(M2B1_PWM, 0);
             pwm_duty_ppt_set(M2B2_PWM, 0);
-            hit = true;
+
+            sent = 0;
+            snprintf (buffert, sizeof (buffert), "%d\n", 1);
+            sent = nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE);
+
             pio_output_toggle(LED_STATUS_PIO);
+            printf("Not Sent %d\n", sent_counter);
+            sent_counter ++;
+            if (sent){
+                printf("sent: %d\n", sent_counter);
+                hit = 0;
+                sent_counter = 0;
+                pio_output_high(LED_STATUS_PIO);
+                delay_ms (10000); // need to sort delay out, 1 not sending before delay
+            }
         } else {
-            pio_output_low(LED_STATUS_PIO);
-            printf("Not Hit \n");
-            snprintf (buffert, sizeof (buffert), "%d \n", 0);
-        }
-        
-        if (! nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE))
-            printf("Not Sent\n");
-        else //if (hit)
-        {
-            printf("Sent\n");
-            //delay_ms (10000); // need to sort delay out, 1 not sending before delay
-        }
-        hit = false;
-        
-        // bumper hit send finished
+            if (! (pio_input_get(Bumper_PIO)))
+            {
+                hit = 1;
 
-    
+            } else {
+                pio_output_low(LED_STATUS_PIO);
+                printf("Not Hit \n");
+            }
 
-        
-        
-        //ledtape();
-        //Receiving Motor info from hat
-        
-        char buffer[RADIO_PAYLOAD_SIZE + 1];
-        uint8_t bytes;
-        bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
-        if (bytes != 0)
-        {
-            buffer[bytes] = 0;
-            //printf ("buffer %s\n", buffer);
+            ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+            //ledtape();
+            //Receiving Motor info from hat
             
-        } else{
-            printf("not recieved\n");
-        }
-        if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6)
-        {
-            switch (directionm1) {
-                case 1:
-                    printf(" duty%d %d \n", duty_setm1, directionm1);
-                    pwm_duty_ppt_set(M1A1_PWM, duty_setm1*10);
-                    pwm_duty_ppt_set(M1A2_PWM, 0);
-                    break;
-                case 0:
-                    printf("duty%d %d \n", duty_setm1, directionm1);
-                    pwm_duty_ppt_set(M1A2_PWM, duty_setm1*10);
-                    pwm_duty_ppt_set(M1A1_PWM, 0);
-                    break;
-                default:
-                    printf("Invalid operator: %d\n", directionm1);
-                }
+            char buffer[RADIO_PAYLOAD_SIZE + 1];
+            uint8_t bytes;
+            bytes = nrf24_read (nrf, buffer, RADIO_PAYLOAD_SIZE);
+            if (bytes != 0)
+            {
+                buffer[bytes] = 0;
+                printf ("recived buffer %s\n", buffer);
+                
+            } else{
+                printf("not recieved\n");
+            }
+            if (sscanf(buffer, "%d %d %d %d %d %d", &duty_setm1, &directionm1, &duty_setm2, &directionm2, &zvalue, &zdirection) == 6)
+            {
+                switch (directionm1) {
+                    case 1:
+                        printf(" duty%d %d \n", duty_setm1, directionm1);
+                        pwm_duty_ppt_set(M1A1_PWM, duty_setm1*10);
+                        pwm_duty_ppt_set(M1A2_PWM, 0);
+                        break;
+                    case 0:
+                        printf("duty%d %d \n", duty_setm1, directionm1);
+                        pwm_duty_ppt_set(M1A2_PWM, duty_setm1*10);
+                        pwm_duty_ppt_set(M1A1_PWM, 0);
+                        break;
+                    default:
+                        printf("Invalid operator: %d\n", directionm1);
+                    }
 
-            switch (directionm2) {
-                case 1:
-                    printf("duty2 %d %d \n", duty_setm2, directionm2);
-                    pwm_duty_ppt_set(M2B1_PWM, duty_setm2*10);
-                    pwm_duty_ppt_set(M2B2_PWM, 0);
-                    break;
-                case 0:
-                    printf("duty2 %d %d \n", duty_setm2, directionm2);
-                    pwm_duty_ppt_set(M2B2_PWM, duty_setm2*10);
-                    pwm_duty_ppt_set(M2B1_PWM, 0);
-                    break;
-                default:
-                    printf("Invalid operator: %d\n", directionm2);
-                }
-        //} else {
-            //printf("Invalid input\n");
-        }
+                switch (directionm2) {
+                    case 1:
+                        printf("duty2 %d %d \n", duty_setm2, directionm2);
+                        pwm_duty_ppt_set(M2B1_PWM, duty_setm2*10);
+                        pwm_duty_ppt_set(M2B2_PWM, 0);
+                        break;
+                    case 0:
+                        printf("duty2 %d %d \n", duty_setm2, directionm2);
+                        pwm_duty_ppt_set(M2B2_PWM, duty_setm2*10);
+                        pwm_duty_ppt_set(M2B1_PWM, 0);
+                        break;
+                    default:
+                        printf("Invalid operator: %d\n", directionm2);
+                    }
+            //} else {
+                //printf("Invalid input\n");
+            }
 
-        
-        /*
-        if (pio_input_get(BUTTON_SLEEP_PIO))
-        {
-            //printf("Hit \n");
-            pio_output_low(LED_ERROR_PIO);
             
-        } else {
-            //printf("Not Hit \n");
-            pio_output_high(LED_ERROR_PIO);
+            /*
+            if (pio_input_get(BUTTON_SLEEP_PIO))
+            {
+                //printf("Hit \n");
+                pio_output_low(LED_ERROR_PIO);
+                
+            } else {
+                //printf("Not Hit \n");
+                pio_output_high(LED_ERROR_PIO);
+            }
+            */
         }
-        */
     }
 }
 
