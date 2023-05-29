@@ -27,7 +27,7 @@
 #define channel4 4
 #define RADIO_PAYLOAD_SIZE 32
 
-#define PACER_RATE 10
+#define PACER_RATE 50
 #define ACCEL_POLL_RATE 1
 
 #define NUM_LEDS 21
@@ -148,37 +148,49 @@ void pio_config(void)
 
 }
 
-void turn_led_on(void)
+void turn_led_on(int r, int g, int b)
 {
 
+        uint8_t leds[NUM_LEDS * 3];
+    int i;
 
-    uint8_t leds[NUM_LEDS * 3];
-    bool blue = false;
-    int count = 0;
-    ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
-    pacer_wait();
-    
-
-    if (count++ == NUM_LEDS)
+    for (i = 0; i < NUM_LEDS; i++)
     {
-        // wait for a revolution
-        ledbuffer_clear(leds);
-        if (blue)
-        {
-            ledbuffer_set(leds, 0, 0, 0, 255);
-            ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
-        }
-        else
-        {
-            ledbuffer_set(leds, 0, 255, 0, 0);
-            ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
-        }
-        blue = !blue;
-        count = 0;
+        // Set full green  GRB order
+        leds[i * 3] = r;
+        leds[i * 3 + 1] = g;
+        leds[i * 3 + 2] = b;
     }
 
-    ledbuffer_write (leds);
-    ledbuffer_advance (leds, 1);
+    ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+
+    // //uint8_t leds[NUM_LEDS * 3];
+    // bool blue = false;
+    // int count = 0;
+    // ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
+
+    // pacer_wait();
+    
+    // if (count++ == NUM_LEDS)
+    // {
+    //     // wait for a revolution
+    //     ledbuffer_clear(leds);
+    //     if (blue)
+    //     {
+    //         ledbuffer_set(leds, 0, 0, 0, 255);
+    //         ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
+    //     }
+    //     else
+    //     {
+    //         ledbuffer_set(leds, 0, 255, 0, 0);
+    //         ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
+    //     }
+    //     blue = !blue;
+    //     count = 0;
+    // }
+
+    // ledbuffer_write (leds);
+    // ledbuffer_advance (leds, 1);
 }
 
 nrf24_t * initradio (void)
@@ -247,16 +259,16 @@ void battery_measure(adc_t *adc)
     adc_read (*adc, data, sizeof (data));
     //printf ("%3d: %d\n", count_adc, data[0]);
     count_adc ++;
-    uint8_t leds[NUM_LEDS * 3];
-    int i;
+    //uint8_t leds[NUM_LEDS * 3];
+    //int i;
 
-    for (i = 0; i < NUM_LEDS; i++)
-    {
-        // Set full green  GRB order
-        leds[i * 3] = 0;
-        leds[i * 3 + 1] = 255;
-        leds[i * 3 + 2] = 0;
-    }
+    // for (i = 0; i < NUM_LEDS; i++)
+    // {
+    //     Set full green  GRB order
+    //     leds[i * 3] = 0;
+    //     leds[i * 3 + 1] = 255;
+    //     leds[i * 3 + 2] = 0;
+    // }
 
     if (data[0] < 2660) 
     {
@@ -265,7 +277,7 @@ void battery_measure(adc_t *adc)
     } else {
         //printf("good\n");
         pio_output_set(LED_STATUS_PIO, LED_ACTIVE);
-        ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+        //ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
         //pio_output_set (LED_STATUS_PIO, !LED_ACTIVE);
     }
 }
@@ -342,7 +354,7 @@ main (void)
 
     nrf = initradio();
     if (! nrf)
-        panic (LED_GREEN_PIO, 2);
+        panic (LED_GREEN_PIO, 1);
 
     // Initialise the TWI (I2C) bus for the ADXL345
     adxl345_twi = twi_init (&adxl345_twi_cfg);
@@ -368,6 +380,7 @@ main (void)
     //     leds[i * 3 + 2] = 0;
     // }
 
+    turn_led_on(255,0,0);
 
     pacer_init (PACER_RATE);
 
@@ -378,12 +391,7 @@ main (void)
 
         char buffer[RADIO_PAYLOAD_SIZE + 1];
         char bufferi[RADIO_PAYLOAD_SIZE + 1];
-
         
-        //ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
-        turn_led_on();
-        
-
         battery_measure(&adc);
 
         adxl345_accel_read (adxl345, accel);
@@ -404,14 +412,16 @@ main (void)
         if ((x_acc >= -40) && (x_acc <= 60))
         {
             if (y_acc > 80) {
-                motor_L = abs(x_acc * 100/270);
+                motor_L = 20;
                 motor_R = abs(y_acc * 100/230);
+                motor_L_dir = 1;
                 motor_R_dir = 1;
             }
             else if (y_acc < -60) {
                 motor_L = abs(y_acc * 100/200);
-                motor_R = abs(x_acc * 100/270);
+                motor_R = 20;
                 motor_L_dir = 1;
+                motor_R_dir = 1;
             }
             else {
                 motor_L = 0;
@@ -433,8 +443,8 @@ main (void)
             else {
                 // motor_L = 100; // max speed forward
                 // motor_R = 100;
-                motor_L = abs(x_acc * 100/270);
-                motor_R = abs(x_acc * 100/270);
+                motor_L = abs(x_acc * 120/270);
+                motor_R = abs(x_acc * 120/270);
 
             }
         } 
@@ -459,8 +469,9 @@ main (void)
         } 
 
         //sending accel data to the car
-        if (ticks < 10) 
+        if (ticks < 16) 
         {
+            //ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
             snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
             if (!nrf24_write(nrf, buffer, RADIO_PAYLOAD_SIZE))
             {
@@ -507,7 +518,7 @@ main (void)
                 delay_ms(500);
                 pwm_duty_ppt_set(PIEZO_PWMF, 0);
                 flag = true;
-                
+
                 // else 
                 // {
                 //     flag = false;
