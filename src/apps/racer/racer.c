@@ -28,7 +28,7 @@
 
 #define PACER_RATE 2
 #define PWM_FREQ_HZ 1e3
-#define NUM_LEDS 20
+#define NUM_LEDS 21
 
 #define RADIO_CHANNEL1 1
 #define RADIO_CHANNEL2 2
@@ -250,6 +250,8 @@ int main (void)
     bool is_asleep = false;
     uint8_t ledsred[NUM_LEDS * 3];
     uint8_t ledsoff[NUM_LEDS * 3];
+    uint8_t ledsblue[NUM_LEDS * 3];
+    uint8_t ledsgreen[NUM_LEDS * 3];
     int i;
 
     for (i = 0; i < NUM_LEDS; i++)
@@ -261,6 +263,12 @@ int main (void)
         ledsoff[i * 3] = 0;
         ledsoff[i * 3 + 1] = 0;
         ledsoff[i * 3 + 2] = 0;
+        ledsblue[i * 3] = 0;
+        ledsblue[i * 3 + 1] = 0;
+        ledsblue[i * 3 + 2] = 255;
+        ledsgreen[i * 3] = 255;
+        ledsgreen[i * 3 + 1] = 0;
+        ledsgreen[i * 3 + 2] = 0;
         
     }
 
@@ -368,6 +376,7 @@ int main (void)
             sent = 0;
             snprintf (buffert, sizeof (buffert), "%d\n", 1);
             sent = nrf24_write (nrf, buffert, RADIO_PAYLOAD_SIZE);
+            ledtape_write (LEDTAPE_PIO, ledsblue, NUM_LEDS * 3);
 
             pio_output_toggle(LED_STATUS_PIO);
             printf("Not Sent %d\n", sent_counter);
@@ -434,9 +443,9 @@ int main (void)
                     default:
                         printf("Invalid operator: %d\n", directionm2);
                     }
-            //} else {
+            } //else {
                 //printf("Invalid input\n");
-            }
+            //}
 
             
             /*
