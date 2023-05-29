@@ -17,6 +17,7 @@
 #include "ledtape.h"
 #include "pwm.h"
 #include "adc.h"
+#include "ledbuffer.h"
 
 #define RADIO_CHANNEL 4
 #define RADIO_ADDRESS 0x2777777777LL
@@ -147,6 +148,39 @@ void pio_config(void)
 
 }
 
+void turn_led_on(void)
+{
+
+
+    uint8_t leds[NUM_LEDS * 3];
+    bool blue = false;
+    int count = 0;
+    ledbuffer_t *leds = ledbuffer_init (LEDTAPE_PIO, NUM_LEDS);
+    pacer_wait();
+    
+
+    if (count++ == NUM_LEDS)
+    {
+        // wait for a revolution
+        ledbuffer_clear(leds);
+        if (blue)
+        {
+            ledbuffer_set(leds, 0, 0, 0, 255);
+            ledbuffer_set(leds, NUM_LEDS / 2, 0, 0, 255);
+        }
+        else
+        {
+            ledbuffer_set(leds, 0, 255, 0, 0);
+            ledbuffer_set(leds, NUM_LEDS / 2, 255, 0, 0);
+        }
+        blue = !blue;
+        count = 0;
+    }
+
+    ledbuffer_write (leds);
+    ledbuffer_advance (leds, 1);
+}
+
 nrf24_t * initradio (void)
 {
     int channelt;
@@ -211,7 +245,7 @@ void battery_measure(adc_t *adc)
     uint16_t data[1];
     static int count_adc=0;
     adc_read (*adc, data, sizeof (data));
-    printf ("%3d: %d\n", count_adc, data[0]);
+    //printf ("%3d: %d\n", count_adc, data[0]);
     count_adc ++;
     uint8_t leds[NUM_LEDS * 3];
     int i;
@@ -347,6 +381,7 @@ main (void)
 
         
         //ledtape_write (LEDTAPE_PIO, leds, NUM_LEDS * 3);
+        turn_led_on();
         
 
         battery_measure(&adc);
@@ -368,14 +403,14 @@ main (void)
 
         if ((x_acc >= -40) && (x_acc <= 60))
         {
-            if (y_acc > 60) {
-                motor_L = 0;
+            if (y_acc > 80) {
+                motor_L = abs(x_acc * 100/270);
                 motor_R = abs(y_acc * 100/230);
                 motor_R_dir = 1;
             }
-            else if (y_acc < -40) {
+            else if (y_acc < -60) {
                 motor_L = abs(y_acc * 100/200);
-                motor_R = 0;
+                motor_R = abs(x_acc * 100/270);
                 motor_L_dir = 1;
             }
             else {
@@ -383,7 +418,7 @@ main (void)
                 motor_R = 0;
             }
         }
-        else if (x_acc > 60)
+        else if (x_acc > 0)
         {
             motor_L_dir = 1;
             motor_R_dir = 1;
@@ -429,14 +464,14 @@ main (void)
             snprintf (buffer, sizeof (buffer), "%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
             if (!nrf24_write(nrf, buffer, RADIO_PAYLOAD_SIZE))
             {
-                //printf("Failed to send data\n");
-                //printf("%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
-                //printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
+                printf("Failed to send data\n");
+                printf("%5d %1d %5d %1d %5d %1d\n", motor_L, motor_L_dir, motor_R, motor_R_dir, z_acc, z_dir);
+                printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
             }
             else
             {
-                //printf("Sent data: %s\n", buffer);
-                //printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
+                printf("Sent data: %s\n", buffer);
+                printf("%5d %5d %5d\n", x_acc, y_acc, z_acc);
                 pio_output_toggle(LED_ERROR_PIO);
             }   
         }
@@ -446,17 +481,17 @@ main (void)
             if (bytes != 0)
             {
                 bufferi[bytes] = 0;
-                printf("rx data: %s\n", buffer);
+                //printf("rx data: %s\n", buffer);
                 pio_output_toggle (LED_STATUS_PIO);
-                printf("Car is hit!\n");
+                //printf("Car is hit!\n");
                 pwm_duty_ppt_set(PIEZO_PWMA, PWM_FREQ_A);
-                printf("a\n");
+                //printf("a\n");
                 delay_ms(1000);
-                printf("b\n");
+                //printf("b\n");
                 pwm_duty_ppt_set(PIEZO_PWMF, PWM_FREQ_F);
-                printf("c\n");
+                //printf("c\n");
                 delay_ms(1000);
-                printf("d\n");
+                //printf("d\n");
                 pwm_duty_ppt_set(PIEZO_PWMF, 0);
                 pwm_duty_ppt_set(PIEZO_PWMG, PWM_FREQ_G);
                 delay_ms(500);
